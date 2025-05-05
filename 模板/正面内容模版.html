@@ -27,10 +27,26 @@
      */
     function renderMarkDownFn() {
         try {
+            // 卡片的内容都是放在 id 为 qa 的 div 中
+            let qa = document.getElementById("qa");
+            if (qa) {
+                qa.style.opacity = "0";
+            }
+
+            // 转换内容
             document.querySelectorAll('.md-content').forEach((div) => {
                 div.innerHTML = renderMarkDown(div.innerHTML);
                 div.className = "markdown-body";
             });
+
+            // 呈现内容
+            let answerHr = document.getElementById("answer");
+            if (answerHr) {
+                answerHr.style.opacity = "1";
+            }
+            if (qa) {
+                qa.style.opacity = "1";
+            }
         } catch (e) {
             DivLog.error("Error: " + e);
         }
@@ -82,7 +98,7 @@
      * @returns {string}
      */
     function renderMarkDown(text) {
-        DivLog.debug("==========================================");
+        DivLog.debug("======================================");
         DivLog.debug("Original content：", text);
 
         // <code></code> 包裹的内容不做处理
@@ -191,11 +207,10 @@
                         msgContainer = document.createElement("div");
                         msgContainer.id = "msgContainer";
                         msgContainer.style.textAlign = "left";
-                        // 将日志信息放在最后一个 class="markdown-body" 的 div 的后面
-                        const divs = document.querySelectorAll("div.markdown-body");
-                        const lastDiv = divs.length > 0 ? divs[divs.length - 1] : null;
-                        if (lastDiv) {
-                            lastDiv.parentNode.appendChild(msgContainer);
+                        // 将日志信息放在最后
+                        let qa = document.getElementById("qa");
+                        if (qa) {
+                            qa.appendChild(msgContainer);
                         }
                     }
                     return msgContainer
@@ -203,7 +218,7 @@
                 clearLogDiv() {
                     const msgContainer = document.getElementById("msgContainer");
                     if (msgContainer) {
-                        msgContainer.innerHTML = "";
+                        msgContainer.remove();
                     }
                 }
             };
