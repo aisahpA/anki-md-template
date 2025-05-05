@@ -1,5 +1,5 @@
-<div class="markdown-body">
-    {{Front}}
+<div class="md-content">
+    {{正面}}
 </div>
 
 
@@ -27,9 +27,9 @@
      */
     function renderMarkDownFn() {
         try {
-            document.querySelectorAll('.markdown-body').forEach((div) => {
+            document.querySelectorAll('.md-content').forEach((div) => {
                 div.innerHTML = renderMarkDown(div.innerHTML);
-                div.style.opacity = '1';
+                div.className = "markdown-body";
             });
         } catch (e) {
             DivLog.error("Error: " + e);
@@ -207,8 +207,12 @@
                     }
                 }
             };
+        }
+        // 更新日志级别
+        if (DivLog.LOG_LEVEL !== config_logLevel) {
             DivLog.LOG_LEVEL = config_logLevel;
         }
+        // 清空日志
         DivLog.clearLogDiv();
 
         // 隐藏特殊片段
