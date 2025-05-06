@@ -20,6 +20,7 @@
 /* 代码块自动换行，方便手机端查看代码 */
 pre code[class*="language-"] {
     white-space: pre-wrap;
+    font-size: 16px;
 }
 
 .katex {
