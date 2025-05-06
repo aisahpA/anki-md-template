@@ -77,12 +77,13 @@
             engine: katex,
             // 数学公式标识符，参考：https://www.npmjs.com/package/markdown-it-texmath
             // 'dollars'：$...$ or $$...$$
-            // 'brackets'： \(...\) or \[...\]，这个标识符号是 Anki 默认的，不用解析
-            delimiters: ['dollars'],
+            // 'brackets'： \(...\) or \[...\]，这个标识符号是 Anki 默认的，
+            //    但安卓端数学公式的解析是在页面加载完成后执行，这里的 Markdown 转换会破坏公式，还是需要将 'brackets' 配置上
+            delimiters: ['dollars', 'brackets'],
             // katex 的配置选项，参考：https://katex.org/docs/options
             katexOptions: {
                 output: 'html',
-                throwOnError: true, // true-页面展示解析异常，false-解析异常的公式展示原字符并标记为红色
+                throwOnError: false, // true-页面展示解析异常，false-解析异常的公式展示原字符并标记为红色
                 strict: (errorCode, errorMsg, token) => {
                     DivLog.warn('Warn: ' + errorCode + ' ' + errorMsg + ' ' + token);
                     return "ignore";
