@@ -10,8 +10,6 @@
     var scriptUrls = [
         "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
         "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
-        "https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/texmath.min.js",
-        "https://gcore.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
     ];
 
     initDivLog();
@@ -166,19 +164,6 @@
                     }
                 }
                 return '';
-            }
-        }).use(window.texmath, {
-            engine: katex,
-            // 数学公式标识符，https://www.npmjs.com/package/markdown-it-texmath
-            delimiters: ['dollars'], // $...$ or $$...$$
-            // katex 的配置选项，https://katex.org/docs/options
-            katexOptions: {
-                output: 'html',
-                throwOnError: false,
-                strict: (errorCode, errorMsg, token) => {
-                    DivLog.warn('Warn: ' + errorCode + ' ' + errorMsg + ' ' + token);
-                    return "ignore";
-                }
             }
         });
     }

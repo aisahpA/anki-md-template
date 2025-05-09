@@ -1,7 +1,5 @@
 @import url('https://gcore.jsdelivr.net/npm/github-markdown-css@5.8.1/github-markdown.min.css');
 @import url('https://gcore.jsdelivr.net/npm/highlight.js@11.11.1/styles/night-owl.min.css');
-@import url('https://gcore.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css');
-@import url('https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/css/texmath.min.css');
 @import url('https://gcore.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css');
 
 .markdown-body {
@@ -17,10 +15,6 @@
 pre code[class*="language-"] {
     white-space: pre-wrap;
     font-size: 16px;
-}
-
-.katex {
-    font-size: 1.18em !important; /* 放大公式显示，与 Anki 解析的公式一样大 */
 }
 
 /* Anki 似乎不支持 prefers-color-scheme，换一种方式设置暗黑模式 */
