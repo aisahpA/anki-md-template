@@ -54,7 +54,7 @@
         let math_tag_matches;
         [text, math_tag_matches] = CensorUtil.censor(text, CensorUtil.MathJs_Reg, CensorUtil.MathJs_Replace);
         if (math_tag_matches.length > 0) {
-            DivLog.debug("After hide \\(...\\) 和 \\[...\\]：", text);
+            DivLog.debug("After hide \\ (...\\) 和 \\ [...\\]：", text);
         }
 
         text = text.trim()
@@ -108,7 +108,7 @@
                     messages.forEach(message => {
                         // 替换数学公式中的界定符号，原样显示，不然会被 anki 替换为公式形状
                         if (typeof message === 'string') {
-                            message = message.replace(/\\\(/g, '@(').replace(/\\\[/g, '@[');
+                            message = message.replace(/\\\(/g, '\\_(').replace(/\\\[/g, '\\_[');
                         }
                         messageDiv.appendChild(document.createTextNode(message));
                         messageDiv.appendChild(document.createElement("br"));
@@ -141,17 +141,6 @@
         }
         DivLog.setLevel(config_logLevel || "info");
         DivLog.clearLogDiv();
-    }
-
-    function loadScriptSync(url) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, false); // 同步模式（第三个参数设为 false）
-        xhr.send();
-        if (xhr.status === 200) {
-            const script = document.createElement('script');
-            script.text = xhr.responseText;
-            document.head.appendChild(script);
-        }
     }
 
     // 初始化-markdown-it
@@ -194,13 +183,26 @@
         });
     }
 
+    // 同步加载 js 文件
+    function loadScriptSync(url) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false);
+        xhr.send();
+        if (xhr.status === 200) {
+            const script = document.createElement('script');
+            script.text = xhr.responseText;
+            document.head.appendChild(script);
+        }
+    }
+
     // 初始化-特殊片段隐藏工具
     function initCensorUtil() {
         if (typeof CensorUtil === 'undefined') {
             window.CensorUtil = {
                 Code_Reg: /<code[^>]*>([\s\S]*?)<\/code>/g,
                 Code_Replace: "ANKI_CODE_REPLACE",
-                MathJs_Reg: /\\\[[\s\S]*?\\]|\\\([\s\S]*?\\\)/g,
+                // 匹配数学公式： \[...\] 和 \(...\)
+                MathJs_Reg: /(\\\[[\s\S]*?\\])|(\\\([\s\S]*?\\\))/g,
                 MathJs_Replace: "ANKI_MATHJS_REPLACE",
                 censor: function (note_text, regexp, mask) {
                     let matches = [];
