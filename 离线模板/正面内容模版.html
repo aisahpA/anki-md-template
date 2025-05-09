@@ -1,0 +1,208 @@
+<div class="md-content">
+    {{正面}}
+</div>
+
+
+<script>
+    // 日志级别： debug、warn、error
+    var config_logLevel = "error";
+
+    var scriptUrls = [
+        "_markdown-it@14.1.0.min.js",
+        "_highlight@11.11.1.min.js"
+    ];
+
+    initDivLog();
+    renderMarkDownFn();
+
+    /**
+     * 转换卡片内容为 markdown 网页格式
+     */
+    function renderMarkDownFn() {
+        try {
+            initAnkiMarkDownIt();
+            initCensorUtil();
+            document.querySelectorAll('.md-content').forEach((div) => {
+                div.innerHTML = renderMarkDown(div.innerHTML);
+                div.className = "markdown-body";
+            });
+        } catch (e) {
+            console.error(e);
+            DivLog.error("Error: ", e);
+        }
+    }
+
+    /**
+     * 绘制内容为 markdown 网页格式
+     * @param {string} text
+     * @returns {string}
+     */
+    function renderMarkDown(text) {
+        DivLog.debug("======================================");
+        DivLog.debug("Original content：", text);
+
+        // 隐藏标签 <code></code>
+        let code_tag_matches;
+        [text, code_tag_matches] = CensorUtil.censor(text, CensorUtil.Code_Reg, CensorUtil.Code_Replace);
+        if (code_tag_matches.length > 0) {
+            DivLog.debug("After hide html tag <code></code>：", text);
+        }
+
+        // 隐藏数学公式：\(...\) 和 \[...\]
+        let math_tag_matches;
+        [text, math_tag_matches] = CensorUtil.censor(text, CensorUtil.MathJs_Reg, CensorUtil.MathJs_Replace);
+        if (math_tag_matches.length > 0) {
+            DivLog.debug("After hide \\ (...\\) 和 \\ [...\\]：", text);
+        }
+
+        text = text.trim()
+            .replace(/&(amp|lt|gt|nbsp);/g, (_, type) => {
+                const entities = {amp: '&', lt: '<', gt: '>', nbsp: ' '};
+                return entities[type] || '';
+            })
+            .replace(/<br>/g, '\n');
+        DivLog.debug("After reverse some HTML tags：", text);
+
+        // 转换成 markdown 网页格式
+        text = AnkiMarkDownIt.render(text);
+        DivLog.debug("After markdown-it conversion：", text);
+
+        // 还原隐藏的内容
+        text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches)
+        text = CensorUtil.decensor(text, CensorUtil.Code_Replace, code_tag_matches)
+
+        return text;
+    }
+
+
+    // 初始化-日志工具
+    function initDivLog() {
+        if (typeof DivLog === 'undefined') {
+            window.DivLog = {
+                currentLevel: 4,
+                levelMap: {debug: 5, info: 4, warn: 3, error: 2, off: 1},
+                setLevel(levelStr) {
+                    this.currentLevel = this.levelMap[levelStr];
+                },
+                debug(...messages) {
+                    this._log(this.levelMap.debug, "", ...messages);
+                },
+                info(...messages) {
+                    this._log(this.levelMap.info, "", ...messages);
+                },
+                warn(...messages) {
+                    this._log(this.levelMap.warn, "orange", ...messages);
+                },
+                error(...messages) {
+                    this._log(this.levelMap.error, "red", ...messages);
+                },
+                _log(minLevel, fontColor, ...messages) {
+                    if (minLevel > this.currentLevel || messages.length === 0) {
+                        return;
+                    }
+                    const messageDiv = document.createElement("div");
+                    messageDiv.style.color = fontColor;
+                    messages[0] = new Date().toLocaleTimeString() + "  " + messages[0];
+                    messages.forEach(message => {
+                        // 替换数学公式中的界定符号，原样显示，不然会被 anki 替换为公式形状
+                        if (typeof message === 'string') {
+                            message = message.replace(/\\\(/g, '\\_(').replace(/\\\[/g, '\\_[');
+                        }
+                        messageDiv.appendChild(document.createTextNode(message));
+                        messageDiv.appendChild(document.createElement("br"));
+                    });
+                    messageDiv.appendChild(document.createElement("hr"));
+                    this._getMsgContainer().appendChild(messageDiv)
+                },
+                _getMsgContainer() {
+                    let msgContainer = document.getElementById("msgContainer");
+                    if (!msgContainer) {
+                        msgContainer = document.createElement("div");
+                        msgContainer.id = "msgContainer";
+                        msgContainer.style.textAlign = "left";
+                        msgContainer.style.whiteSpace = "pre-wrap";
+                        // 将日志信息放在最后
+                        let qa = document.getElementById("qa");
+                        if (qa) {
+                            qa.appendChild(msgContainer);
+                        }
+                    }
+                    return msgContainer
+                },
+                clearLogDiv() {
+                    const msgContainer = document.getElementById("msgContainer");
+                    if (msgContainer) {
+                        msgContainer.remove();
+                    }
+                }
+            };
+        }
+        DivLog.setLevel(config_logLevel || "info");
+        DivLog.clearLogDiv();
+    }
+
+    // 初始化-markdown-it
+    function initAnkiMarkDownIt() {
+        if (typeof AnkiMarkDownIt !== 'undefined') {
+            DivLog.info("AnkiMarkDownIt is init!");
+            return;
+        }
+        DivLog.info("AnkiMarkDownIt did not init!")
+        // 同步加载 js 文件
+        scriptUrls.forEach(url => loadScriptSync(url));
+
+        window.AnkiMarkDownIt = markdownit({
+            // 配置参考：https://markdown-it.docschina.org/api/MarkdownIt.html#markdownit-new
+            html: true,
+            linkify: true,
+            breaks: true,
+            highlight: function (str, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(str, {language: lang}).value
+                    } catch (__) {
+                    }
+                }
+                return '';
+            }
+        });
+    }
+
+    // 同步加载 js 文件
+    function loadScriptSync(url) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false);
+        xhr.send();
+        if (xhr.status === 200) {
+            const script = document.createElement('script');
+            script.text = xhr.responseText;
+            document.head.appendChild(script);
+        }
+    }
+
+    // 初始化-特殊片段隐藏工具
+    function initCensorUtil() {
+        if (typeof CensorUtil === 'undefined') {
+            window.CensorUtil = {
+                Code_Reg: /<code[^>]*>([\s\S]*?)<\/code>/g,
+                Code_Replace: "ANKI_CODE_REPLACE",
+                // 匹配数学公式： \[...\] 和 \(...\)
+                MathJs_Reg: /(\\\[[\s\S]*?\\])|(\\\([\s\S]*?\\\))/g,
+                MathJs_Replace: "ANKI_MATHJS_REPLACE",
+                censor: function (note_text, regexp, mask) {
+                    let matches = [];
+                    for (let match of note_text.matchAll(regexp)) {
+                        matches.push(match[0])
+                    }
+                    return [note_text.replace(regexp, mask), matches]
+                },
+                decensor: function (note_text, mask, replacements) {
+                    for (let replacement of replacements) {
+                        note_text = note_text.replace(mask, replacement)
+                    }
+                    return note_text
+                }
+            };
+        }
+    }
+</script>
