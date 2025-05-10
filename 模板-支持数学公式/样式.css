@@ -11,6 +11,10 @@
     text-align: left; /* left-左对齐，center-居中对齐 */
 }
 
+.hide-qa-card {
+    visibility: hidden !important;
+}
+
 /* 代码块自动换行，方便手机端查看代码 */
 pre code[class*="language-"] {
     white-space: pre-wrap;
