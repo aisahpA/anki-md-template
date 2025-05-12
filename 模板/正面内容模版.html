@@ -1,10 +1,10 @@
 <div class="md-content">
-    {{正面}}
+    {{Front}}
 </div>
 
 
 <script>
-    // 日志级别： debug、warn、error
+    // 日志级别： debug、error
     var config_logLevel = "error";
 
     var scriptUrls = [
@@ -12,22 +12,36 @@
         "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
     ];
 
-    hideCard();
-    initDivLog();
-    initScriptResource(scriptUrls).then(() => {
-        // Anki 原来的逻辑执行完成后再转换内容
-        setTimeout(() => {
-            renderMarkDownFn();
-        }, 0);
-    })
+    if (!!window.hasDoneFirst) {
+        renderMarkDownFn();
+    } else {
+        doFirst();
+    }
+
+    // 第一次运行
+    function doFirst() {
+        try {
+            hideCard();
+            initDivLog();
+            initCensorUtil();
+            initScriptResource(scriptUrls).then(() => {
+                initAnkiMarkDownIt();
+                renderMarkDownFn();
+                showCard();
+            });
+            window.hasDoneFirst = true;
+        } catch (e) {
+            console.error(e);
+            DivLog.error("Error: ", e);
+            showCard();
+        }
+    }
 
     /**
      * 转换卡片内容为 markdown 网页格式
      */
     function renderMarkDownFn() {
         try {
-            initAnkiMarkDownIt();
-            initCensorUtil();
             document.querySelectorAll('.md-content').forEach((div) => {
                 div.innerHTML = renderMarkDown(div.innerHTML);
                 div.className = "markdown-body";
@@ -35,8 +49,6 @@
         } catch (e) {
             console.error(e);
             DivLog.error("Error: ", e);
-        } finally {
-            showCard();
         }
     }
 

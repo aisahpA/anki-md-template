@@ -10,60 +10,48 @@
 <style>
     .markdown-body {
         max-width: 980px;
-        padding: 45px;
     }
 </style>
 <body class="markdown-body hide-qa-card" id="qa">
 
 <!-- prettier-ignore -->
 <div class="md-content">
-> Anki-Markdown 模板测试
-
+测试 Markdown 格式
+***
 # 一级标题
 ## 二级标题
 ### 三级标题
----
-### 基本样式
----
 **加粗**
 *斜体*
 ***加粗斜体***
-***
 > 引用
 引用第二行
 引用第三行
----
+
 - 无序列表
 - 无序列表
 - 无序列表
----
+
 1. 有序列表 1
 2. 有序列表 2
-2. 有序列表 3
+3. 有序列表 3
 </div>
 <div class="md-content">
 ### 代码块
-***
-```javascript
+ `代码块 1`
+```c
 #include &lt;stdio.h&gt;
 int factorial(int n) {
     if (n <= 1) return 1;
     return n * factorial(n - 1);
 }
 ```
-
-```java
-/**
-* @param src 待拷贝的数组.
-* @param srcPos 待拷贝数组开始位置.
-* @param dest 目标数组.
-* @param destPos 目标数组开始位置.
-* @param length 拷贝长度.
-*/
-@HotSpotIntrinsicCandidate
-public static native void arraycopy(Object src, int srcPos, Object dest, int destPos, int length);
-```
-code包裹的代码块
+代码块 2
+   ```python
+   sql = "SELECT * FROM your_table"
+   cursor.execute(sql)
+   ```
+代码块 3
 <ul>
 <li>下面代码的 HTML 格式中 <code>&amp;gt;</code> 与 <code>&amp;lt;</code> 不能转义为 &gt; 和 &lt;，否则会有异常的下划线</li>
 <li>不转换 <code>&lt;code&gt;&lt;/code&gt;</code>包裹的内容</li>
@@ -83,46 +71,55 @@ code包裹的代码块
 </div>
 
 <div class="md-content">
-### 数学公式
-`(`、`[`公式，由 Anki 解析：
-- \(\lfloor i/2 \rfloor\)
-- \(E=mc^2\)
-- \[\int_{a}^{b} f(x) \, dx\]
+### 数学公式 - 由 Anki 解析
+**行内公式：**
+-  \(E=mc^2\)、 \(\lfloor i/2 \rfloor\)、\(f(x)\)、\(A\)
+- Does \(\sum_{k = 1}^{\infty}\frac{1}{k}\) converge?
+- 勾股定理：\(a^2 + b^2 = c^2\)，其中 \(c\) 是斜边
+- \({\Gamma(z) = \int_0^\infty t^{z-1}e^{-t}dt\,.}\)
+- \(\begin{pmatrix} a &amp; b \\ c &amp; d \end{pmatrix}\)、 \(\int_{a}^{b} f(x) \, dx\)
 
-***
-`$`行内公式-不支持：
-- $E=mc^2$、 $\lfloor i/2 \rfloor$、$f(x)$、$A$、$文字$
-- Does $\sum_{k = 1}^{\infty}\frac{1}{k}$ converge?
-- 勾股定理：$a^2 + b^2 = c^2$，其中 $c$ 是斜边
-- ${\Gamma(z) = \int_0^\infty t^{z-1}e^{-t}dt\,.}$
-- $\begin{pmatrix} a & b \\ c & d \end{pmatrix}$
-- $\int_{a}^{b} f(x) \, dx$
-- $\sum_{k=1}^n k = \frac{n(n+1)}{2}$
-***
-`$$`块级公式-不支持：
-$$\frac{d}{dx}(x^n) = nx^{n-1}$$
-$$\int_{a}^{b} f(x) \, dx$$
-$$\sum_{k=1}^n k = \frac{n(n+1)}{2}$$
-***
-有解析警告：
-$E=mc^2$
-$2^{层数-1}$
-***
-解析失败：
-$\left\{()\right$
-***
+**块级公式：**
+\[\frac{d}{dx}(x^n) = nx^{n-1}\]
+\[\sum_{k=1}^n k = \frac{n(n+1)}{2}\]
+
+**多行公式：**
+行内：
+\(f(x) =
+\left\{
+  \begin{aligned}
+    &amp; \lambda e^{-\lambda x} &amp; x &gt; 0 \\
+    &amp; 0 &amp; x \leq 0 \\
+  \end{aligned}
+\right.\)
+块级：
+\[f(x) =
+\left\{
+  \begin{aligned}
+    &amp; \lambda e^{-\lambda x} &amp; x &gt; 0 \\
+    &amp; 0 &amp; x \leq 0 \\
+  \end{aligned}
+\right.\]
+
+忽略解析警告：
+\(2^{层数-1}\)
+
+非法数学公式：
+\(\left\{()\right\)
+
 不解析为特殊字符：
-(C) 不解析为版权符号
+(C) 不解析为 ©
+(R) 不解析为 ®
+
+不支持 \$ 数学公式，请转换为 `\ (...\ )` 或 `\ [...\ ]`
+$E=mc^2$
+$$a^2 + b^2 = c^2$$
 </div>
 
 <div class="md-content">
-### 图片与链接
-***
+### 链接与图片
 [百度](https://www.baidu.com)
-***
-图片链接
-![图片](https://www.baidu.com/img/bd_logo1.png)
-***
+ ![图片链接](https://www.baidu.com/img/bd_logo1.png)
 </div>
 
 <script src="https://gcore.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
