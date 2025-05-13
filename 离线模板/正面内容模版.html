@@ -1,4 +1,4 @@
-<div class="md-content">
+<div class="markdown-body">
     {{Front}}
 </div>
 
@@ -12,44 +12,34 @@
         "_highlight@11.11.1.min.js"
     ];
 
-    if (!!window.hasDoneFirst) {
-        renderMarkDownFn();
-    } else {
-        doFirst();
-    }
-
-    // 第一次运行
-    function doFirst() {
-        try {
-            hideCard();
+    // 执行内容转换
+    try {
+        hideCard();
+        if (typeof AnkiMarkDownIt !== 'undefined') {
+            // 可以复用 AnkiMarkDownIt，直接执行转换
+            renderMarkDownFn();
+        } else {
             initDivLog();
             initCensorUtil();
             initScriptResource(scriptUrls).then(() => {
                 initAnkiMarkDownIt();
                 renderMarkDownFn();
-                showCard();
             });
-            window.hasDoneFirst = true;
-        } catch (e) {
-            console.error(e);
-            DivLog.error("Error: ", e);
-            showCard();
         }
+    } catch (e) {
+        console.error(e);
+        DivLog.error("Error: ", e);
+        showCard();
     }
 
     /**
      * 转换卡片内容为 markdown 网页格式
      */
     function renderMarkDownFn() {
-        try {
-            document.querySelectorAll('.md-content').forEach((div) => {
-                div.innerHTML = renderMarkDown(div.innerHTML);
-                div.className = "markdown-body";
-            });
-        } catch (e) {
-            console.error(e);
-            DivLog.error("Error: ", e);
-        }
+        document.querySelectorAll('.markdown-body').forEach((div) => {
+            div.innerHTML = renderMarkDown(div.innerHTML);
+        });
+        showCard();
     }
 
     /**
@@ -191,18 +181,13 @@
             });
         })).catch(error => {
             DivLog.error(error);
-            showCard();
             throw error;
         });
     }
 
     // 初始化-markdown-it
     function initAnkiMarkDownIt() {
-        if (typeof AnkiMarkDownIt !== 'undefined') {
-            DivLog.info("AnkiMarkDownIt is init!");
-            return;
-        }
-        DivLog.info("AnkiMarkDownIt did not init!")
+        DivLog.info("init AnkiMarkDownIt!")
         window.AnkiMarkDownIt = markdownit({
             // 配置参考：https://markdown-it.docschina.org/api/MarkdownIt.html#markdownit-new
             html: true,
@@ -250,16 +235,16 @@
     }
 
     function hideCard() {
-        let qa = document.getElementById("qa");
+        const qa = document.getElementById("qa");
         if (qa) {
-            qa.classList.add("hide-qa-card");
+            qa.classList.remove("qa-visible");
         }
     }
 
     function showCard() {
-        let qa = document.getElementById("qa");
+        const qa = document.getElementById("qa");
         if (qa) {
-            qa.classList.remove("hide-qa-card");
+            qa.classList.add("qa-visible");
         }
     }
 </script>
