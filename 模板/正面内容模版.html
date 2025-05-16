@@ -12,34 +12,63 @@
         "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
     ];
 
-    // 执行内容转换
-    try {
-        hideCard();
-        if (typeof AnkiMarkDownIt !== 'undefined') {
-            // 可以复用 AnkiMarkDownIt，直接执行转换
-            renderMarkDownFn();
+    doTransform();
+
+    function doTransform() {
+        initDivLog();
+
+        const runPipeline = getRunPipeline();
+
+        if (globalThis.onUpdateHook) {
+            DivLog.info("onUpdateHook exists, add to onUpdateHook")
+            onUpdateHook.push(runPipeline);
         } else {
-            initDivLog();
-            initCensorUtil();
-            initScriptResource(scriptUrls).then(() => {
-                initAnkiMarkDownIt();
-                renderMarkDownFn();
-            });
+            runPipeline();
         }
-    } catch (e) {
-        console.error(e);
-        DivLog.error("Error: ", e);
-        showCard();
+    }
+
+    function getRunPipeline() {
+        return () => {
+            if (globalThis.hasInitResource) {
+                renderMarkDownFn();
+            } else {
+                // 开始加载脚本并初始化
+                let initPromise = Promise.resolve();
+                for (const url of scriptUrls) {
+                    initPromise = initPromise.then(() => loadScript(url));
+                }
+                initPromise
+                    .then(() => {
+                        DivLog.info('All scripts loaded successfully');
+                        initCensorUtil();
+                        initAnkiMarkDownIt();
+                        globalThis.hasInitResource = true;
+                    })
+                    .catch(e => {
+                        DivLog.error('初始化失败:', e);
+                        showCard();
+                        throw e;
+                    })
+                    .then(() => {
+                        renderMarkDownFn();
+                    })
+            }
+        };
     }
 
     /**
      * 转换卡片内容为 markdown 网页格式
      */
     function renderMarkDownFn() {
-        document.querySelectorAll('.markdown-body').forEach((div) => {
-            div.innerHTML = renderMarkDown(div.innerHTML);
-        });
-        showCard();
+        try {
+            document.querySelectorAll('.markdown-body').forEach((div) => {
+                div.innerHTML = renderMarkDown(div.innerHTML);
+            });
+        } catch (e) {
+            DivLog.error('渲染失败:', e);
+        } finally {
+            showCard();
+        }
     }
 
     /**
@@ -50,20 +79,6 @@
     function renderMarkDown(text) {
         DivLog.debug("======================================");
         DivLog.debug("Original content：", text);
-
-        // 隐藏标签 <code></code>
-        let code_tag_matches;
-        [text, code_tag_matches] = CensorUtil.censor(text, CensorUtil.Code_Reg, CensorUtil.Code_Replace);
-        if (code_tag_matches.length > 0) {
-            DivLog.debug("After hide html tag <code></code>：", text);
-        }
-
-        // 隐藏标签 <mjx-container></mjx-container>
-        let mjx_tag_matches
-        [text, mjx_tag_matches] = CensorUtil.censor(text, CensorUtil.Mjx_Container_Reg, CensorUtil.Mjx_Container_Replace);
-        if (mjx_tag_matches.length > 0) {
-            DivLog.debug("After hide html tag <mjx-container></mjx-container>：", text);
-        }
 
         // 隐藏数学公式：\(...\) 和 \[...\]
         let math_tag_matches;
@@ -86,8 +101,6 @@
 
         // 还原隐藏的内容
         text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches)
-        text = CensorUtil.decensor(text, CensorUtil.Mjx_Container_Replace, mjx_tag_matches)
-        text = CensorUtil.decensor(text, CensorUtil.Code_Replace, code_tag_matches)
 
         return text;
     }
@@ -126,6 +139,9 @@
                         if (typeof message === 'string') {
                             message = message.replace(/\\\(/g, '\\_(').replace(/\\\[/g, '\\_[');
                         }
+                        if (message instanceof Error) {
+                            message = message.stack;
+                        }
                         messageDiv.appendChild(document.createTextNode(message));
                         messageDiv.appendChild(document.createElement("br"));
                     });
@@ -154,35 +170,9 @@
                     }
                 }
             };
+            DivLog.setLevel(config_logLevel || "info");
         }
-        DivLog.setLevel(config_logLevel || "info");
         DivLog.clearLogDiv();
-    }
-
-    /**
-     * 初始化-javascript 资源
-     * @param scriptUrls 多个资源地址数组
-     * @returns {Promise<Awaited<unknown>[]>|Promise<void>}
-     */
-    function initScriptResource(scriptUrls) {
-        if (typeof markdownit !== 'undefined') {
-            DivLog.info("markdown-it is loaded!")
-            return Promise.resolve();
-        }
-
-        DivLog.info("markdown-it did not load, re-adding triggers loading!")
-        return Promise.all(scriptUrls.map(url => {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.onload = resolve;
-                script.onerror = () => reject(new Error(`Failed to load script from ${url}`));
-                script.src = url;
-                document.head.appendChild(script);
-            });
-        })).catch(error => {
-            DivLog.error(error);
-            throw error;
-        });
     }
 
     // 初始化-markdown-it
@@ -208,43 +198,49 @@
     // 初始化-特殊片段隐藏工具
     function initCensorUtil() {
         if (typeof CensorUtil === 'undefined') {
+            DivLog.info("init CensorUtil!");
             window.CensorUtil = {
-                Code_Reg: /<code[^>]*>([\s\S]*?)<\/code>/g,
-                Code_Replace: "ANKI_CODE_REPLACE",
-                // 匹配数学公式转换后： <mjx-container>...</mjx-container>
-                Mjx_Container_Reg: /<mjx-container[^>]*>([\s\S]*?)<\/mjx-container>/g,
-                Mjx_Container_Replace: "ANKI_MJX_CONTAINER_REPLACE",
                 // 匹配数学公式： \[...\] 和 \(...\)
                 MathJs_Reg: /(\\\[[\s\S]*?\\])|(\\\([\s\S]*?\\\))/g,
                 MathJs_Replace: "ANKI_MATHJS_REPLACE",
                 censor: function (note_text, regexp, mask) {
                     let matches = [];
-                    for (let match of note_text.matchAll(regexp)) {
-                        matches.push(match[0])
-                    }
-                    return [note_text.replace(regexp, mask), matches]
+                    let replacedText = note_text.replace(regexp, (match) => {
+                        matches.push(match);
+                        return mask;
+                    });
+                    return [replacedText, matches];
                 },
                 decensor: function (note_text, mask, replacements) {
-                    for (let replacement of replacements) {
-                        note_text = note_text.replace(mask, replacement)
+                    if (replacements.length === 0) {
+                        return note_text;
                     }
-                    return note_text
+                    // 创建一个迭代器以便逐个替换
+                    let replacementIterator = replacements[Symbol.iterator]();
+                    // 使用全局替换并按顺序替换每一个 mask
+                    return note_text.replace(new RegExp(mask, 'g'), () => {
+                        return replacementIterator.next().value;
+                    });
                 }
             };
         }
     }
 
-    function hideCard() {
-        const qa = document.getElementById("qa");
-        if (qa) {
-            qa.classList.remove("qa-visible");
-        }
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            DivLog.info("load script: ", url)
+            const script = document.createElement("script");
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Failed to load script from ${url}`));
+            script.src = url;
+            document.head.appendChild(script);
+        });
     }
 
     function showCard() {
-        const qa = document.getElementById("qa");
-        if (qa) {
-            qa.classList.add("qa-visible");
+        const card = document.querySelector(".card");
+        if (card) {
+            card.classList.add("card-show");
         }
     }
 </script>

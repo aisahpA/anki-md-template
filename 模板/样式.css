@@ -10,12 +10,12 @@
     text-align: left; /* left-左对齐，center-居中对齐 */
 }
 
-#qa {
-    visibility: hidden !important;
+.card {
+    opacity: 0;
 }
 
-#qa.qa-visible {
-    visibility: visible !important;
+.card-show {
+    opacity: 1;
 }
 
 /* 代码块自动换行，方便手机端查看代码 */

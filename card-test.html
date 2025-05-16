@@ -12,8 +12,8 @@
         max-width: 980px;
     }
 </style>
-<body id="qa">
-
+<body class="card">
+<div id="qa">
 <!-- prettier-ignore -->
 <div class="markdown-body">
 测试 Markdown 格式
@@ -51,23 +51,6 @@ int factorial(int n) {
    sql = "SELECT * FROM your_table"
    cursor.execute(sql)
    ```
-代码块 3
-<ul>
-<li>下面代码的 HTML 格式中 <code>&amp;gt;</code> 与 <code>&amp;lt;</code> 不能转义为 &gt; 和 &lt;，否则会有异常的下划线</li>
-<li>不转换 <code>&lt;code&gt;&lt;/code&gt;</code>包裹的内容</li>
-</ul>
-<pre><code class="hljs java language-java"><span class="hljs-keyword">public</span> <span
-        class="hljs-keyword">class</span> <span class="hljs-title class_">NumberPair</span>&lt;U <span
-        class="hljs-keyword">extends</span> <span class="hljs-title class_">Number</span>, V <span
-        class="hljs-keyword">extends</span> <span class="hljs-title class_">Number</span>&gt; <span
-        class="hljs-keyword">extends</span> <span class="hljs-title class_">Pair</span>&lt;U,V&gt; {
-    <span class="hljs-comment">//</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-title function_">NumberPair</span><span
-            class="hljs-params">(U first, V second)</span> {
-        <span class="hljs-built_in">super</span>(first, second);
-    }
-}
-</code></pre>
 </div>
 
 <div class="markdown-body">
@@ -122,6 +105,46 @@ $$a^2 + b^2 = c^2$$
  ![图片链接](https://www.baidu.com/img/bd_logo1.png)
 </div>
 
+<div class="markdown-body">
+Mermaid 图表
+***
+```mermaid
+%% Obsidian Mermaid流程图语法
+%% 方向：从上到下(TB)
+%% 节点形状：圆角矩形
+%% 颜色定义：终止状态红色，运行状态绿色
+
+flowchart LR
+    classDef startend fill:#90EE90,stroke:#006400
+    classDef process fill:#87CEEB,stroke:#1E90FF
+    classDef decision fill:#FFB6C1,stroke:#FF6347
+    classDef terminal fill:#FFA07A,stroke:#8B0000
+
+    A([新建状态 NEW]) -->|"start()"| B(可运行状态 RUNNABLE)
+    B -->|CPU调度| C{运行状态 RUNNING}
+    C -->|"时间片用完/yield()"| B
+    C -->|执行结束| D([终止状态 TERMINATED])
+
+    B -->|"wait()/join()/LockSupport.park()"| E(等待状态 WAITING)
+    B -->|"sleep()/wait(timeout)"| F(超时等待状态 TIMED_WAITING)
+    B -->|synchronized竞争失败| G(阻塞状态 BLOCKED)
+
+    E -->|"notify()/notifyAll()"| B
+    F -->|超时自动恢复| B
+    G -->|获取锁| B
+
+    D -.->|不可逆| A
+    E -.->|无法直接唤醒| B
+    F -.->|自动恢复机制| B
+    G -.->|锁释放| B
+
+    style A fill:#98FB98,stroke:#228B22
+    style D fill:#FF6347,stroke:#8B0000
+    style G fill:#DDA0DD,stroke:#9400D3
+```
+</div>
+
+</div>
 <script src="https://gcore.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script type="text/javascript">
     $.get("模板/正面内容模版.html", function (data) {
