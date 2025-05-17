@@ -12,6 +12,7 @@
         jsResources: [
             "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
             "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
+            "https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"
         ],
 
         /** Markdown-it options */
@@ -27,9 +28,18 @@
                         return hljs.highlight(str, {language: lang}).value
                     } catch (__) {
                     }
+                } else if (lang === "mermaid") {
+                    // Handle mermaid blocks specifically for the plugin
+                    return `<pre class="mermaid">${str}</pre>`;
                 }
                 return '';
             },
+        },
+
+        /** Mermaid options */
+        mermaidOptions: {
+            theme: "default",
+            startOnLoad: false,
         },
     }
 
@@ -139,6 +149,9 @@
                 window.AnkiMarkDownIt = window.markdownit(config.markdownOptions);
                 DivLog.info("Markdown-it initialized.");
 
+                mermaid.initialize(config.mermaidOptions);
+                DivLog.info("Mermaid initialized.");
+
                 resolve();
             } catch (initError) {
                 showCard();
@@ -190,9 +203,10 @@
     }
 
     /**
-     * Renders Markdown content
+     * Renders Markdown content and Mermaid diagrams.
      *
      * This function attempts to find all elements with the class name 'markdown-body' and render their innerHTML content using Markdown formatting.
+     * After Markdown rendering is complete, it will attempt to render any Mermaid diagrams present in the content.
      */
     function renderMarkDownFn() {
         try {
@@ -201,6 +215,8 @@
                 .forEach((div) => {
                     div.innerHTML = renderMarkDown(div.innerHTML);
                 });
+            // Render Mermaid diagrams if any are present
+            renderMermaid();
         } catch (e) {
             DivLog.error('Render markdown error: ', e);
         } finally {
@@ -239,6 +255,29 @@
 
         return text;
     }
+
+    function renderMermaid() {
+        const mermaidElements = document.querySelectorAll("pre.mermaid");
+        if (mermaidElements.length > 0) {
+            mermaidElements.forEach((el) => (el.style.display = "block")); // Ensure visible
+            try {
+                // Use mermaid.run() - preferred for dynamic content
+                mermaid
+                    .run({nodes: mermaidElements})
+                    .then(() => {
+                        // console.log("Mermaid rendering complete.");
+                        // Optional: Hide original <pre> if needed
+                        // mermaidElements.forEach(el => el.style.display = 'none');
+                    })
+                    .catch((mermaidError) => {
+                        DivLog.error("Mermaid rendering failed", mermaidError);
+                    });
+            } catch (mermaidError) {
+                DivLog.error("Error calling mermaid.run()", mermaidError);
+            }
+        }
+    }
+
 
     function showCard() {
         const card = document.querySelector(".card");
