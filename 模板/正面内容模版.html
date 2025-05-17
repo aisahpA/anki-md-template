@@ -190,10 +190,9 @@
     }
 
     /**
-     * Renders Markdown content and Mermaid diagrams.
+     * Renders Markdown content
      *
      * This function attempts to find all elements with the class name 'markdown-body' and render their innerHTML content using Markdown formatting.
-     * After Markdown rendering is complete, it will attempt to render any Mermaid diagrams present in the content.
      */
     function renderMarkDownFn() {
         try {
@@ -202,8 +201,6 @@
                 .forEach((div) => {
                     div.innerHTML = renderMarkDown(div.innerHTML);
                 });
-            // Render Mermaid diagrams if any are present
-            renderMermaid();
         } catch (e) {
             DivLog.error('Render markdown error: ', e);
         } finally {
