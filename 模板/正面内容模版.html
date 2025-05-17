@@ -4,109 +4,42 @@
 
 
 <script>
-    // 日志级别： debug、error
-    var config_logLevel = "error";
+    var config = {
+        /** log level： debug、info、error */
+        logLevel: 'error',
 
-    var scriptUrls = [
-        "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
-        "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
-    ];
+        /** List of js to load */
+        jsResources: [
+            "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
+            "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
+        ],
 
-    doTransform();
-
-    function doTransform() {
-        initDivLog();
-
-        const runPipeline = getRunPipeline();
-
-        if (globalThis.onUpdateHook) {
-            DivLog.info("onUpdateHook exists, add to onUpdateHook")
-            onUpdateHook.push(runPipeline);
-        } else {
-            runPipeline();
-        }
-    }
-
-    function getRunPipeline() {
-        return () => {
-            if (globalThis.hasInitResource) {
-                renderMarkDownFn();
-            } else {
-                // 开始加载脚本并初始化
-                let initPromise = Promise.resolve();
-                for (const url of scriptUrls) {
-                    initPromise = initPromise.then(() => loadScript(url));
+        /** Markdown-it options */
+        markdownOptions: {
+            html: true, // Enable HTML tags in source
+            xhtmlOut: false, // Don't use '/' in single tags (<br />)
+            breaks: true, // Convert '\n' in paragraphs into <br>
+            linkify: true, // Autoconvert URL-like text to links
+            typographer: false, // Enable smartypants and other typographic replacements
+            highlight: function (str, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(str, {language: lang}).value
+                    } catch (__) {
+                    }
                 }
-                initPromise
-                    .then(() => {
-                        DivLog.info('All scripts loaded successfully');
-                        initCensorUtil();
-                        initAnkiMarkDownIt();
-                        globalThis.hasInitResource = true;
-                    })
-                    .catch(e => {
-                        DivLog.error('初始化失败:', e);
-                        showCard();
-                        throw e;
-                    })
-                    .then(() => {
-                        renderMarkDownFn();
-                    })
-            }
-        };
+                return '';
+            },
+        },
     }
+
 
     /**
-     * 转换卡片内容为 markdown 网页格式
+     * Initializes the DivLog utility for logging messages to both console and a DOM element.
+     * If DivLog is not already defined, it creates a new instance with methods for different log levels (debug, info, warn, error).
+     * Each log message includes a timestamp and is styled according to its level.
+     * Logs are appended to a dedicated container in the DOM, which is created if it doesn't exist.
      */
-    function renderMarkDownFn() {
-        try {
-            document.querySelectorAll('.markdown-body').forEach((div) => {
-                div.innerHTML = renderMarkDown(div.innerHTML);
-            });
-        } catch (e) {
-            DivLog.error('渲染失败:', e);
-        } finally {
-            showCard();
-        }
-    }
-
-    /**
-     * 绘制内容为 markdown 网页格式
-     * @param {string} text
-     * @returns {string}
-     */
-    function renderMarkDown(text) {
-        DivLog.debug("======================================");
-        DivLog.debug("Original content：", text);
-
-        // 隐藏数学公式：\(...\) 和 \[...\]
-        let math_tag_matches;
-        [text, math_tag_matches] = CensorUtil.censor(text, CensorUtil.MathJs_Reg, CensorUtil.MathJs_Replace);
-        if (math_tag_matches.length > 0) {
-            DivLog.debug("After hide \\ (...\\) 和 \\ [...\\]：", text);
-        }
-
-        text = text.trim()
-            .replace(/&(amp|lt|gt|nbsp);/g, (_, type) => {
-                const entities = {amp: '&', lt: '<', gt: '>', nbsp: ' '};
-                return entities[type] || '';
-            })
-            .replace(/<br>/g, '\n');
-        DivLog.debug("After reverse some HTML tags：", text);
-
-        // 转换成 markdown 网页格式
-        text = AnkiMarkDownIt.render(text);
-        DivLog.debug("After markdown-it conversion：", text);
-
-        // 还原隐藏的内容
-        text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches)
-
-        return text;
-    }
-
-
-    // 初始化-日志工具
     function initDivLog() {
         if (typeof DivLog === 'undefined') {
             window.DivLog = {
@@ -170,37 +103,66 @@
                     }
                 }
             };
-            DivLog.setLevel(config_logLevel || "info");
         }
+        DivLog.setLevel(globalThis.configLevel || config.logLevel || "info");
         DivLog.clearLogDiv();
     }
 
-    // 初始化-markdown-it
-    function initAnkiMarkDownIt() {
-        DivLog.info("init AnkiMarkDownIt!")
-        window.AnkiMarkDownIt = markdownit({
-            // 配置参考：https://markdown-it.docschina.org/api/MarkdownIt.html#markdownit-new
-            html: true,
-            linkify: true,
-            breaks: true,
-            highlight: function (str, lang) {
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(str, {language: lang}).value
-                    } catch (__) {
-                    }
-                }
-                return '';
+    /**
+     * Loads a JavaScript resource.
+     */
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            let element = document.createElement("script");
+            element.src = url;
+            element.onload = () => {
+                DivLog.info('Successfully loaded ' + url);
+                resolve(); // Resolve for non-plugin resources
+            };
+            element.onerror = (e) => {
+                DivLog.error(`Failed to load ${url}`, e);
+                reject(e);
+            };
+            document.head.appendChild(element);
+        });
+    }
+
+    /**
+     * Initializes libraries (Markdown-it, Mermaid) after resources are loaded.
+     * @returns {Promise<void>} Resolves when libraries are initialized or if non-critical parts fail.
+     */
+    function initializeLibs() {
+        return new Promise((resolve, reject) => {
+            try {
+                initCensorUtil();
+
+                window.AnkiMarkDownIt = window.markdownit(config.markdownOptions);
+                DivLog.info("Markdown-it initialized.");
+
+                resolve();
+            } catch (initError) {
+                showCard();
+                DivLog.error("Critical error during library initialization", initError);
+                reject(initError); // Reject if core initialization fails (like markdown-it)
             }
         });
     }
 
-    // 初始化-特殊片段隐藏工具
+    /**
+     * Initializes the CensorUtil utility if it hasn't been defined yet.
+     *
+     * CensorUtil provides functions to temporarily hide LaTeX math expressions (e.g., $$...$$, $...$)
+     * during Markdown processing, ensuring they are not altered by intermediate transformations.
+     * This is useful when rendering Markdown content that contains math formulas which should be preserved as-is.
+     */
     function initCensorUtil() {
         if (typeof CensorUtil === 'undefined') {
-            DivLog.info("init CensorUtil!");
             window.CensorUtil = {
-                // 匹配数学公式： \[...\] 和 \(...\)
+                /**
+                 * Regular expression to match LaTeX math expressions:
+                 * - $$...$$
+                 * - $(...)$
+                 */
                 MathJs_Reg: /(\\\[[\s\S]*?\\])|(\\\([\s\S]*?\\\))/g,
                 MathJs_Replace: "ANKI_MATHJS_REPLACE",
                 censor: function (note_text, regexp, mask) {
@@ -215,26 +177,70 @@
                     if (replacements.length === 0) {
                         return note_text;
                     }
-                    // 创建一个迭代器以便逐个替换
+                    // Create an iterator to replace each mask in order
                     let replacementIterator = replacements[Symbol.iterator]();
-                    // 使用全局替换并按顺序替换每一个 mask
+                    // Replace all occurrences of mask in the text
                     return note_text.replace(new RegExp(mask, 'g'), () => {
                         return replacementIterator.next().value;
                     });
                 }
             };
+            DivLog.info("CensorUtil initialized.");
         }
     }
 
-    function loadScript(url) {
-        return new Promise((resolve, reject) => {
-            DivLog.info("load script: ", url)
-            const script = document.createElement("script");
-            script.onload = resolve;
-            script.onerror = () => reject(new Error(`Failed to load script from ${url}`));
-            script.src = url;
-            document.head.appendChild(script);
-        });
+    /**
+     * Renders Markdown content and Mermaid diagrams.
+     *
+     * This function attempts to find all elements with the class name 'markdown-body' and render their innerHTML content using Markdown formatting.
+     * After Markdown rendering is complete, it will attempt to render any Mermaid diagrams present in the content.
+     */
+    function renderMarkDownFn() {
+        try {
+            // Process all '.markdown-body' elements and render their content using Markdown
+            document.querySelectorAll('.markdown-body')
+                .forEach((div) => {
+                    div.innerHTML = renderMarkDown(div.innerHTML);
+                });
+            // Render Mermaid diagrams if any are present
+            renderMermaid();
+        } catch (e) {
+            DivLog.error('Render markdown error: ', e);
+        } finally {
+            showCard();
+        }
+    }
+
+    /**
+     * Convert content to markdown web format
+     * @param {string} text - The input text to be rendered
+     * @returns {string} - Rendered HTML string
+     */
+    function renderMarkDown(text) {
+        DivLog.debug("======================================");
+        DivLog.debug("Original content：", text);
+
+        let math_tag_matches;
+        [text, math_tag_matches] = CensorUtil.censor(text, CensorUtil.MathJs_Reg, CensorUtil.MathJs_Replace);
+        if (math_tag_matches.length > 0) {
+            DivLog.debug("After hide \\ (...\\) 和 \\ [...\\]：", text);
+        }
+
+        text = text.trim()
+            .replace(/&(amp|lt|gt|nbsp|quot|#39);/g, (_, type) => {
+                const entities = {amp: '&', lt: '<', gt: '>', nbsp: ' '};
+                return entities[type] || '';
+            })
+            .replace(/<br>/g, '\n');
+        DivLog.debug("After reverse some HTML tags：", text);
+
+        text = AnkiMarkDownIt.render(text);
+        DivLog.debug("After markdown-it render:", text);
+
+        text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
+        DivLog.debug("After restoring hidden content:", text);
+
+        return text;
     }
 
     function showCard() {
@@ -243,4 +249,36 @@
             card.classList.add("card-show");
         }
     }
+
+    function getRunPipeline() {
+        return () => {
+            if (globalThis.hasInitResource) {
+                renderMarkDownFn();
+            } else {
+                globalThis.hasInitResource = true;
+                Promise.all(config.jsResources.map(loadScript))
+                    .then(() => {
+                        return initializeLibs();
+                    })
+                    .then(() => {
+                        renderMarkDownFn();
+                    })
+            }
+        };
+    }
+
+    function main() {
+        initDivLog();
+
+        const runPipeline = getRunPipeline();
+
+        if (globalThis.onUpdateHook) {
+            DivLog.info("onUpdateHook exists, add to onUpdateHook")
+            onUpdateHook.push(runPipeline);
+        } else {
+            runPipeline();
+        }
+    }
+
+    main();
 </script>
