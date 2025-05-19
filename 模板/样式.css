@@ -4,17 +4,17 @@
 
 .markdown-body {
     box-sizing: border-box;
-    margin: 0 auto;
+    max-width: 100%;
     padding: 16px;
     font-size: 20px;
     text-align: left; /* left-左对齐，center-居中对齐 */
 }
 
-.card {
+body {
     opacity: 0;
 }
 
-.card-show {
+.body-show {
     opacity: 1;
 }
 
@@ -22,6 +22,24 @@
 pre code[class*="language-"] {
     white-space: pre-wrap;
     font-size: 16px;
+}
+
+.markmap {
+    position: relative;
+    min-height: 400px;
+}
+
+.markmap > svg {
+    width: 100%;
+}
+
+.nightMode .markmap {
+    --markmap-code-bg: #1a1b26;
+    --markmap-code-color: #ddd;
+    --markmap-circle-open-bg: #444;
+    --markmap-text-color: #eee;
+    /*background-color: #0d1117;*/
+    background-color: #151b23;
 }
 
 /* Anki 似乎不支持 prefers-color-scheme，换一种方式设置暗黑模式 */
