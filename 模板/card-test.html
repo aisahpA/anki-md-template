@@ -7,7 +7,17 @@
     <link rel="stylesheet" href="样式.css">
     <title>Anki-Markdown 模板测试</title>
 </head>
-<body class="card nightMode">
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;      /* 垂直居中 */
+        min-height: 100vh;        /* 让 body 占满整个视口高度 */
+        margin: 0;
+    }
+</style>
+<!--<body class="card nightMode">-->
+<body class="card">
 <div id="qa">
 <!-- prettier-ignore -->
 <div class="markdown-body">
@@ -142,18 +152,23 @@ flowchart LR
 ## markmap 图表
 [markmap 文档地址](https://markmap.js.org/docs/markmap)
     </div>
-    <div class="markmap" style="display: none">
+        <div class="markdown-body">
+### markmap 图表1
+    </div>
+    <div class="markmap">
 - markmap <br>
   - autoloader
   - transformer
   - view
     </div>
-
+    <div class="markdown-body">
+### markmap 图表2
+    </div>
     <div class="markmap">
 ---
 title: markmap
 markmap:
-  colorFreezeLevel: 2
+
 ---
 
 ## Links
@@ -199,6 +214,7 @@ console.log('hello, JavaScript')
 </div>
 
 <script type="module" src="_anki-markdown-aisahpA.js"></script>
+<!--<script type="module" src="/dist/bundle.js"></script>-->
 
 </body>
 </html>
