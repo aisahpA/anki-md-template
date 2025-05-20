@@ -277,7 +277,7 @@ let renderMermaid = function () {
 let renderMarkMap = function () {
   try {
     document.querySelectorAll(".markmap").forEach((markMapDiv) => {
-      const content = markMapDiv.textContent;
+      const content = markMapDiv.textContent.trim();
       console.log('Original markmap content:', content);
 
       // Transform the markmap content to a tree structure
