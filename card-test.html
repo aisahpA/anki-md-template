@@ -4,7 +4,8 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="样式.css">
+    <link rel="stylesheet" href="template-import/样式.css">
+<!--    <link rel="stylesheet" href="template-load/样式.css">-->
     <title>Anki-Markdown 模板测试</title>
 </head>
 <style>
@@ -137,7 +138,7 @@ flowchart LR
     F -->|超时自动恢复| B
     G -->|获取锁| B
 
-    D -.->|不可逆| A
+    %%D -.->|不可逆| A
     E -.->|无法直接唤醒| B
     F -.->|自动恢复机制| B
     G -.->|锁释放| B
@@ -165,8 +166,9 @@ flowchart LR
 ### markmap 图表2
     </div>
     <div class="markmap">
-
-# markmap
+---
+title: markmap
+---
 
 ## Links
 
@@ -208,9 +210,41 @@ console.log('hello, JavaScript')
 
 ![](https://markmap.js.org/favicon.png)
     </div>
+
+    <div class="markdown-body">
+### markmap 图表3
+    </div>
+    <div class="markmap">
+---
+title: markmap
+---
+
+### Lists
+- Katex: $x = {-b \pm \sqrt{b^2-4ac} \over 2a}$
+    </div>
+    <div class="markmap">
+---
+title: markmap
+---
+
+### Blocks
+```js
+console.log('hello, JavaScript')
+```
+    </div>
 </div>
 
-<script type="module" src="_anki-markdown-aisahpA.js"></script>
 
+<script type="module" src="template-import/_anki-markdown-import.js"></script>
+<!--<script src="template-load/_anki-markdown-load.js"></script>-->
+
+
+<script>
+  // 添加暗黑模式
+  const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (isDarkMode) {
+    document.body.classList.add('nightMode');
+  }
+</script>
 </body>
 </html>

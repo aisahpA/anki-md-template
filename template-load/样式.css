@@ -18,15 +18,24 @@ body {
     opacity: 1;
 }
 
-/* 代码块自动换行，方便手机端查看代码 */
 pre code[class*="language-"] {
-    white-space: pre-wrap;
-    font-size: 16px;
+    /*white-space: pre-wrap;*/
+    /*font-size: 16px;*/
+}
+
+pre.mermaid {
+    padding: 0;
+    background-color: #ffffff;
+}
+
+.nightMode pre.mermaid {
+    background-color: #0d1117;
 }
 
 .markmap {
     position: relative;
     height: 400px;
+    background-color: #ffffff;
 }
 
 .markmap > svg {

@@ -1,8 +1,8 @@
-import markdownIt from 'https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/+esm';
+import markdownit from 'https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/+esm';
 import hljs from 'https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/es/highlight.min.js';
 import mermaid from 'https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs';
-import {Transformer} from 'https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/+esm'
-import {Markmap} from 'https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/+esm'
+import {Transformer} from 'https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/+esm';
+import * as markmap from 'https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/+esm';
 
 
 const config = {
@@ -32,16 +32,17 @@ const config = {
 
   /** Mermaid options */
   mermaidOptions: {
+    theme: 'default', // 'default' | 'base' | 'dark' | 'forest' | 'neutral' | 'null'
     startOnLoad: false,
   },
-  mermaidViewOptions: {
+  markmapOptions: {
     autoFit: true,
     maxWidth: 300,
-    // zoom: false
   }
 };
 
 
+let isInitialized = false;
 let DivLog;
 let CensorUtil;
 let AnkiMarkDownIt;
@@ -54,11 +55,12 @@ let initAll = function () {
 
     initCensorUtil();
 
-    AnkiMarkDownIt = markdownIt(config.markdownOptions);
+    AnkiMarkDownIt = markdownit(config.markdownOptions);
     DivLog.info("Markdown-it initialized.");
 
     initMermaid();
 
+    isInitialized = true;
   } catch (e) {
     showCard();
     DivLog.error("Initialize error: ", e);
@@ -90,6 +92,7 @@ let initDivLog = function () {
       },
       error(...messages) {
         this._log(this.levelMap.error, "red", ...messages);
+        console.error(...messages);
       },
       _log(minLevel, fontColor, ...messages) {
         if (minLevel > this.currentLevel || messages.length === 0) {
@@ -182,7 +185,9 @@ let initCensorUtil = function () {
 
 let initMermaid = function () {
   let isNight = document.body.classList.contains("nightMode");
-  config.mermaidOptions.theme = isNight ? "dark" : "default";
+  if (isNight) {
+    config.mermaidOptions.theme = "dark";
+  }
 
   mermaid.initialize(config.mermaidOptions);
   DivLog.info("Mermaid initialized.");
@@ -205,23 +210,19 @@ let showCard = function () {
 //------ Convert content ------
 
 /**
- * Renders Markdown content and Mermaid diagrams.
- *
- * This function attempts to find all elements with the class name 'markdown-body' and render their innerHTML content using Markdown formatting.
- * After Markdown rendering is complete, it will attempt to render any Mermaid diagrams present in the content.
+ * Renders the main content of the card, including markdown content, Mermaid diagrams, and markdown mindmap.
  */
-let renderMarkDownMain = function () {
+let renderMain = function () {
   try {
+
+    // Render content using Markdown
+    renderMarkDown();
+
+    // Render Mermaid diagrams
+    renderMermaid();
+
     // Render markdown mindmap
     renderMarkMap();
-
-    // Process all '.markdown-body' elements and render their content using Markdown
-    document.querySelectorAll('.markdown-body').forEach((div) => {
-      div.innerHTML = renderMarkDown(div.innerHTML);
-    });
-
-    // Render Mermaid diagrams if any are present
-    renderMermaid();
 
     DivLog.info("finish rendering.")
   } catch (e) {
@@ -231,12 +232,12 @@ let renderMarkDownMain = function () {
   }
 }
 
-/**
- * Convert content to markdown web format
- * @param {string} text - The input text to be rendered
- * @returns {string} - Rendered HTML string
- */
-let renderMarkDown = function (text) {
+let renderMarkDown = function () {
+  document.querySelectorAll('.markdown-body').forEach(renderMarkDownForSingle);
+}
+
+let renderMarkDownForSingle = function (markdownDiv) {
+  let text = markdownDiv.innerHTML;
   DivLog.debug("======================================");
   DivLog.debug("Original content：", text);
 
@@ -260,7 +261,7 @@ let renderMarkDown = function (text) {
   text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
   DivLog.debug("After restoring hidden content:", text);
 
-  return text;
+  markdownDiv.innerHTML = text;
 }
 
 let renderMermaid = function () {
@@ -275,31 +276,36 @@ let renderMermaid = function () {
 }
 
 let renderMarkMap = function () {
+  document.querySelectorAll(".markmap").forEach(renderMarkMapForSingle);
+}
+
+let renderMarkMapForSingle = function (markMapDiv) {
   try {
-    document.querySelectorAll(".markmap").forEach((markMapDiv) => {
-      const content = markMapDiv.textContent.trim();
-      console.log('Original markmap content:', content);
+    const content = markMapDiv.textContent.trim();
+    DivLog.debug('Original markmap content:', content);
 
-      // Transform the markmap content to a tree structure
-      const transformer = new Transformer();
-      const {root} = transformer.transform(content);
-      console.log('After Parse markmap, root:', root);
-      if (!root || !root.children) {
-        DivLog.warn("Invalid markmap content, no valid nodes found.");
-        return;
-      }
+    // Transform the markmap content to a tree structure
+    const transformer = new Transformer();
+    transformer.urlBuilder.providers.jsdelivr = (path) => `https://gcore.jsdelivr.net/npm/${path}`;
+    const {root, features} = transformer.transform(content);
 
-      // Create an SVG container
-      let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      markMapDiv.innerHTML = '';
-      markMapDiv.appendChild(svg);
+    delete features.hljs; // The project has already loaded hljs
+    const {styles, scripts} = transformer.getUsedAssets(features);
+    if (styles) markmap.loadCSS(styles);
+    if (scripts) {
+      markmap.loadJS(scripts, {getMarkmap: () => markmap,});
+    }
 
-      //  Render the mind map
-      Markmap.create(svg, config.mermaidViewOptions, root);
+    // Create an SVG container
+    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    markMapDiv.innerHTML = '';
+    markMapDiv.appendChild(svg);
 
-      // Optional
-      svg.classList.remove("markmap");
-    });
+    // Render the mind map
+    markmap.Markmap.create(svg, config.markmapOptions, root);
+
+    // Optional
+    svg.classList.remove("markmap");
   } catch (e) {
     DivLog.error("MarkMap rendering failed", e);
   }
@@ -307,8 +313,17 @@ let renderMarkMap = function () {
 
 //------ Main ------
 
-// Initialize all
-initAll();
+let getRunFunction = function () {
+  return () => {
+    if (!isInitialized) {
+      initAll()
+      renderMain();
+    } else {
+      renderMain();
+    }
+  };
+}
+
 
 /**
  * div.markdown-body
@@ -319,12 +334,14 @@ initAll();
  *
  */
 window.ankiMarkDownMain = function () {
+
+  const run = getRunFunction();
+
   if (globalThis.onUpdateHook) {
     // Use Anki's built-in onUpdateHook to ensure execution order
-    DivLog.debug("globalThis.onUpdateHook exists");
-    onUpdateHook.push(renderMarkDownMain);
+    onUpdateHook.push(run);
   } else {
-    renderMarkDownMain();
+    run();
   }
 }
 
