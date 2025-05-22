@@ -9,6 +9,9 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     jsUrl: {
       markdownit: [
         "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
+        "https://gcore.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js",
+        "https://gcore.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js",
+        "https://gcore.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js",
         "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
       ],
       mermaid: [
@@ -18,6 +21,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
         "https://gcore.jsdelivr.net/npm/d3@7/dist/d3.min.js",
         "https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/dist/browser/index.iife.min.js",
         "https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.min.js",
+        "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js",
       ]
     },
 
@@ -100,6 +104,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
       await Promise.all(config.jsUrl.markdownit.map(loadResource));
       initCensorUtil();
       AnkiMarkDownIt = markdownit(config.markdownOptions);
+      AnkiMarkDownIt.use(markdownitMark).use(markdownitSub).use(markdownitSup)
       DivLog.info("Markdown-it initialized.");
     }
   }
@@ -354,7 +359,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
 
   let renderMarkMapSingle = async function (markMapDiv) {
     try {
-      const content = markMapDiv.textContent.trim();
+      const content = extractTextForMarkMap(markMapDiv.innerHTML);
       DivLog.debug('Original markmap content:', content);
 
       // Transform the markmap content to a tree structure
@@ -363,19 +368,49 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
       const {root, features} = transformer.transform(content);
 
       delete features.hljs; // The project has already loaded hljs
+
       const {styles, scripts} = transformer.getUsedAssets(features);
       if (styles) markmap.loadCSS(styles);
       if (scripts) {
         markmap.loadJS(scripts, {getMarkmap: () => markmap,});
       }
 
-      let afterDiv = insertNewDiv(markMapDiv, "", '<svg></svg>');
+      let afterDiv = insertNewDiv(markMapDiv, "hidden", '<svg></svg>');
       await markmap.Markmap.create(afterDiv.firstChild, config.markmapOptions, root);
-      // afterDiv.classList.remove("hidden");
+      afterDiv.classList.remove("hidden");
 
     } catch (e) {
       DivLog.error("MarkMap rendering failed", e);
     }
+  }
+
+  let extractTextForMarkMap = function (html) {
+    const replacements = [
+      {pattern: /<br\s*\/?[^>]*>/gi, replacement: "\n"},
+      {pattern: /<\/?pre[^>]*>/gi, replacement: ""},
+      {pattern: /<\/?span[^>]*>/gi, replacement: ""},
+      {
+        pattern: /<(\/?(?:ol|ul|div|li))[^>]*>/gi, replacement: (match, tag) => {
+          switch (tag.toLowerCase()) {
+            case 'li':
+              return "- ";
+            case '/ol':
+            case '/ul':
+            case '/div':
+              return "\n";
+            default:
+              return "";
+          }
+        }
+      },
+      {pattern: /&nbsp;/gi, replacement: " "},
+      {pattern: /&tab;/gi, replacement: "	"},
+      {pattern: /&gt;/gi, replacement: ">"},
+      {pattern: /&lt;/gi, replacement: "<"},
+      {pattern: /&amp;/gi, replacement: "&"}
+    ];
+
+    return replacements.reduce((acc, {pattern, replacement}) => acc.replace(pattern, replacement), html);
   }
 
 

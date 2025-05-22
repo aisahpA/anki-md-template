@@ -1,11 +1,10 @@
-
 const config = {
   /** log level： debug、info、error */
   logLevel: 'error',
 
   jsUrl: {
     markdownit: 'https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/+esm',
-    hljs:  'https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/es/highlight.min.js',
+    hljs: 'https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/es/highlight.min.js',
     mermaid: 'https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs',
     markmapLib: 'https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/+esm',
     markmapView: 'https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/+esm',
@@ -320,7 +319,7 @@ let renderMarkMapAll = async function () {
 
 let renderMarkMapSingle = async function (markMapDiv) {
   try {
-    const content = markMapDiv.textContent.trim();
+    const content = extractTextForMarkMap(markMapDiv.innerHTML);
     DivLog.debug('Original markmap content:', content);
 
     // Transform the markmap content to a tree structure
@@ -329,19 +328,49 @@ let renderMarkMapSingle = async function (markMapDiv) {
     const {root, features} = transformer.transform(content);
 
     delete features.hljs; // The project has already loaded hljs
+
     const {styles, scripts} = transformer.getUsedAssets(features);
     if (styles) markmap.loadCSS(styles);
     if (scripts) {
       markmap.loadJS(scripts, {getMarkmap: () => markmap,});
     }
 
-    let afterDiv = insertNewDiv(markMapDiv, "", '<svg></svg>');
+    let afterDiv = insertNewDiv(markMapDiv, "hidden", '<svg></svg>');
     await markmap.Markmap.create(afterDiv.firstChild, config.markmapOptions, root);
-    // afterDiv.classList.remove("hidden");
+    afterDiv.classList.remove("hidden");
 
   } catch (e) {
     DivLog.error("MarkMap rendering failed", e);
   }
+}
+
+let extractTextForMarkMap = function (html) {
+  const replacements = [
+    {pattern: /<br\s*\/?[^>]*>/gi, replacement: "\n"},
+    {pattern: /<\/?pre[^>]*>/gi, replacement: ""},
+    {pattern: /<\/?span[^>]*>/gi, replacement: ""},
+    {
+      pattern: /<(\/?(?:ol|ul|div|li))[^>]*>/gi, replacement: (match, tag) => {
+        switch (tag.toLowerCase()) {
+          case 'li':
+            return "- ";
+          case '/ol':
+          case '/ul':
+          case '/div':
+            return "\n";
+          default:
+            return "";
+        }
+      }
+    },
+    {pattern: /&nbsp;/gi, replacement: " "},
+    {pattern: /&tab;/gi, replacement: "	"},
+    {pattern: /&gt;/gi, replacement: ">"},
+    {pattern: /&lt;/gi, replacement: "<"},
+    {pattern: /&amp;/gi, replacement: "&"}
+  ];
+
+  return replacements.reduce((acc, {pattern, replacement}) => acc.replace(pattern, replacement), html);
 }
 
 //------ Main ------

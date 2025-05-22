@@ -4,8 +4,7 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<!--    <link rel="stylesheet" href="template-import/样式.css">-->
-    <link rel="stylesheet" href="template-load/样式.css">
+    <link rel="stylesheet" href="template/样式.css">
     <title>Anki-Markdown 模板测试</title>
 </head>
 <style>
@@ -41,6 +40,11 @@
 1. 有序列表 1
 2. 有序列表 2
 3. 有序列表 3
+
+上标^2^、上标<sup>2</sup>
+下标~2~、H~2~0、H<sub>2</sub>0
+
+==高亮Mark==
 </div>
 <div class="markdown-body original">
 ### 代码块
@@ -230,8 +234,9 @@ console.log('hello, JavaScript')
 </div>
 
 
-<!--<script type="module" src="template-import/_anki-markdown-import.js"></script>-->
-<script type="module" src="template-load/_anki-markdown-load.js"></script>
+<script>globalThis.logLevel = 'error'</script>
+<!--<script type="module" src="template/_anki-markdown-import.js"></script>-->
+<script type="module" src="template/_anki-markdown-load.js"></script>
 <script>if (globalThis.ankiMarkDownMain) ankiMarkDownMain();</script>
 
 <script>
