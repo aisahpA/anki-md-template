@@ -14,8 +14,17 @@ body {
     opacity: 0;
 }
 
-.body-show {
+.visible {
     opacity: 1;
+}
+
+.original {
+    display: none;
+    opacity: 0;
+}
+
+.hidden {
+    opacity: 0;
 }
 
 pre code[class*="language-"] {

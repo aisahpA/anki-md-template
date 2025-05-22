@@ -4,8 +4,8 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="template-import/样式.css">
-<!--    <link rel="stylesheet" href="template-load/样式.css">-->
+<!--    <link rel="stylesheet" href="template-import/样式.css">-->
+    <link rel="stylesheet" href="template-load/样式.css">
     <title>Anki-Markdown 模板测试</title>
 </head>
 <style>
@@ -21,7 +21,7 @@
 <body class="card">
 <div id="qa">
 <!-- prettier-ignore -->
-<div class="markdown-body">
+<div class="markdown-body original">
 测试 Markdown 格式
 ***
 # 一级标题
@@ -42,7 +42,7 @@
 2. 有序列表 2
 3. 有序列表 3
 </div>
-<div class="markdown-body">
+<div class="markdown-body original">
 ### 代码块
  `代码块 1`
 ```c
@@ -59,7 +59,7 @@ int factorial(int n) {
    ```
 </div>
 
-<div class="markdown-body" style="display: none">
+<div class="original">
 ### 数学公式 - 由 Anki 解析
 **行内公式：**
 -  \(E=mc^2\)、 \(\lfloor i/2 \rfloor\)、\(f(x)\)、\(A\)
@@ -105,13 +105,13 @@ $E=mc^2$
 $$a^2 + b^2 = c^2$$
 </div>
 
-<div class="markdown-body">
+<div class="markdown-body original">
 ### 链接与图片
 [百度](https://www.baidu.com)
  ![图片链接](https://www.baidu.com/img/bd_logo1.png)
 </div>
 
-<div class="markdown-body">
+<div class="markdown-body original">
 ## Mermaid 图表
 ```mermaid
 %% Obsidian Mermaid流程图语法
@@ -149,23 +149,23 @@ flowchart LR
 ```
 </div>
 
-    <div class="markdown-body">
+    <div class="markdown-body original">
 ## markmap 图表
 [markmap 文档地址](https://markmap.js.org/docs/markmap)
     </div>
-        <div class="markdown-body">
+        <div class="markdown-body original">
 ### markmap 图表1
     </div>
-    <div class="markmap">
+    <div class="markmap original">
 - markmap <br>
   - autoloader
   - transformer
   - view
     </div>
-    <div class="markdown-body">
+    <div class="markdown-body original">
 ### markmap 图表2
     </div>
-    <div class="markmap">
+    <div class="markmap original">
 ---
 title: markmap
 ---
@@ -211,10 +211,10 @@ console.log('hello, JavaScript')
 ![](https://markmap.js.org/favicon.png)
     </div>
 
-    <div class="markdown-body">
+    <div class="markdown-body original">
 ### markmap 图表3
     </div>
-    <div class="markmap">
+    <div class="markmap original">
 ---
 title: markmap
 ---
@@ -230,9 +230,9 @@ console.log('hello, JavaScript')
 </div>
 
 
-<script type="module" src="template-import/_anki-markdown-import.js"></script>
-<!--<script src="template-load/_anki-markdown-load.js"></script>-->
-
+<!--<script type="module" src="template-import/_anki-markdown-import.js"></script>-->
+<script type="module" src="template-load/_anki-markdown-load.js"></script>
+<script>if (globalThis.ankiMarkDownMain) ankiMarkDownMain();</script>
 
 <script>
   // 添加暗黑模式

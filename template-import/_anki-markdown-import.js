@@ -1,13 +1,15 @@
-import markdownit from 'https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/+esm';
-import hljs from 'https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/es/highlight.min.js';
-import mermaid from 'https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs';
-import {Transformer} from 'https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/+esm';
-import * as markmap from 'https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/+esm';
-
 
 const config = {
   /** log level： debug、info、error */
   logLevel: 'error',
+
+  jsUrl: {
+    markdownit: 'https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/+esm',
+    hljs:  'https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/es/highlight.min.js',
+    mermaid: 'https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs',
+    markmapLib: 'https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/+esm',
+    markmapView: 'https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/+esm',
+  },
 
   /** Markdown-it options */
   markdownOptions: {
@@ -24,7 +26,7 @@ const config = {
         }
       } else if (lang === "mermaid") {
         // Handle mermaid blocks specifically for the plugin
-        return `<pre class="mermaid">${str}</pre>`;
+        return `<pre class="mermaid hidden">${str}</pre>`;
       }
       return '';
     },
@@ -46,32 +48,48 @@ const config = {
 };
 
 
-let isInitialized = false;
 let DivLog;
 let CensorUtil;
 let AnkiMarkDownIt;
 
 //------ Initialize Utilities ------
 
-let initAll = function () {
-  return new Promise((resolve, reject) => {
-    try {
-      initDivLog();
+let initMarkdownit = async function () {
+  if (typeof AnkiMarkDownIt === 'undefined') {
+    const markdownitModule = await import(config.jsUrl.markdownit);
+    globalThis.markdownit = markdownitModule.default;
 
-      initCensorUtil();
+    const hljsModule = await import(config.jsUrl.hljs);
+    globalThis.hljs = hljsModule.default;
 
-      AnkiMarkDownIt = markdownit(config.markdownOptions);
-      DivLog.info("Markdown-it initialized.");
+    initCensorUtil();
+    AnkiMarkDownIt = markdownit(config.markdownOptions);
+    DivLog.info("Markdown-it initialized.");
+  }
+}
 
-      initMermaid();
+let initMermaid = async function () {
+  if (typeof mermaid === 'undefined') {
+    const mermaidModule = await import(config.jsUrl.mermaid);
+    globalThis.mermaid = mermaidModule.default;
 
-      isInitialized = true;
-      resolve();
-    } catch (e) {
-      DivLog.error("Initialize error: ", e);
-      reject(e);
+    let isNight = document.body.classList.contains("nightMode");
+    if (isNight) {
+      config.mermaidOptions.theme = "dark";
     }
-  });
+    mermaid.initialize(config.mermaidOptions);
+    DivLog.info("Mermaid initialized.");
+  }
+}
+
+let initMarkMap = async function () {
+  if (typeof markmap === 'undefined') {
+    const {Transformer} = await import(config.jsUrl.markmapLib);
+    globalThis.Transformer = Transformer;
+
+    globalThis.markmap = await import(config.jsUrl.markmapView);
+    DivLog.info("MarkMap initialized.");
+  }
 }
 
 /**
@@ -190,15 +208,6 @@ let initCensorUtil = function () {
   }
 }
 
-let initMermaid = function () {
-  let isNight = document.body.classList.contains("nightMode");
-  if (isNight) {
-    config.mermaidOptions.theme = "dark";
-  }
-
-  mermaid.initialize(config.mermaidOptions);
-  DivLog.info("Mermaid initialized.");
-}
 
 //------ Controls page display ------
 
@@ -209,10 +218,17 @@ let initMermaid = function () {
  */
 let showCard = function () {
   setTimeout(() => {
-    document.body.classList.add("body-show");
+    document.body.classList.add("visible");
   }, 0)
 }
 
+let insertNewDiv = function (originalElement, className, innerHTML) {
+  let afterDiv = document.createElement('div');
+  afterDiv.className = className;
+  afterDiv.innerHTML = innerHTML;
+  originalElement.parentNode.insertBefore(afterDiv, originalElement.nextSibling);
+  return afterDiv;
+}
 
 //------ Convert content ------
 
@@ -221,15 +237,9 @@ let showCard = function () {
  */
 let renderMain = function () {
   return new Promise((resolve) => {
-    try {
-      // Render content using Markdown
-      renderMarkDownAll();
-    } catch (error) {
-      DivLog.error('Markdown render error: ', error);
-      return resolve();
-    }
-
-    Promise.all([renderMermaidAll(), renderMarkMapAll()])
+    renderMarkDownAll()
+      .then(renderMermaidAll)
+      .then(renderMarkMapAll)
       .then(() => {
         DivLog.info("finish rendering.");
         resolve();
@@ -237,13 +247,20 @@ let renderMain = function () {
       .catch((error) => {
         DivLog.error('Render error: ', error);
         resolve();
+      })
+      .finally(() => {
+        showCard();
       });
   });
 };
 
 
-let renderMarkDownAll = function () {
-  document.querySelectorAll('.markdown-body').forEach(renderMarkDownSingle);
+let renderMarkDownAll = async function () {
+  let elements = document.querySelectorAll('.markdown-body');
+  if (elements.length === 0) return;
+
+  await initMarkdownit();
+  elements.forEach(renderMarkDownSingle);
 }
 
 let renderMarkDownSingle = function (markdownDiv) {
@@ -271,29 +288,34 @@ let renderMarkDownSingle = function (markdownDiv) {
   text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
   DivLog.debug("After restoring hidden content:", text);
 
-  markdownDiv.innerHTML = text;
+  insertNewDiv(markdownDiv, "markdown-body", text);
 }
 
 let renderMermaidAll = async function () {
-  const mermaidElements = document.querySelectorAll("pre.mermaid");
-  if (mermaidElements.length > 0) {
-    try {
-      await mermaid.run({nodes: mermaidElements});
-    } catch (e) {
-      DivLog.error("Mermaid rendering failed", e);
-    }
+  const elements = document.querySelectorAll("pre.mermaid");
+  if (elements.length === 0) return;
+
+  try {
+    await initMermaid();
+    await mermaid.run({nodes: elements});
+    elements.forEach(element => {
+      element.classList.remove("hidden");
+    });
+    DivLog.debug("Mermaid rendering completed.")
+  } catch (e) {
+    DivLog.error("Mermaid rendering failed", e);
   }
 }
 
-let renderMarkMapAll = function () {
-  let divList = document.querySelectorAll(".markmap");
-  if (divList.length > 0) {
-    return [...divList].reduce((promise, div) => {
-      return promise.then(() => renderMarkMapSingle(div));
-    }, Promise.resolve());
-  } else {
-    return Promise.resolve();
-  }
+let renderMarkMapAll = async function () {
+  let elements = document.querySelectorAll(".markmap");
+  if (elements.length === 0) return;
+
+  await initMarkMap();
+
+  await [...elements].reduce((promise, div) => {
+    return promise.then(() => renderMarkMapSingle(div));
+  }, Promise.resolve());
 }
 
 let renderMarkMapSingle = async function (markMapDiv) {
@@ -313,9 +335,9 @@ let renderMarkMapSingle = async function (markMapDiv) {
       markmap.loadJS(scripts, {getMarkmap: () => markmap,});
     }
 
-    // Render the mind map
-    markMapDiv.innerHTML = '<svg></svg>';
-    await markmap.Markmap.create(markMapDiv.firstChild, config.markmapOptions, root);
+    let afterDiv = insertNewDiv(markMapDiv, "", '<svg></svg>');
+    await markmap.Markmap.create(afterDiv.firstChild, config.markmapOptions, root);
+    // afterDiv.classList.remove("hidden");
 
   } catch (e) {
     DivLog.error("MarkMap rendering failed", e);
@@ -324,13 +346,21 @@ let renderMarkMapSingle = async function (markMapDiv) {
 
 //------ Main ------
 
+let isRunning = false;
+
 let getRunFunction = function () {
+  initDivLog();
+  if (isRunning) {
+    DivLog.warn("Function is already running, skipping this call.");
+    return () => {
+    };
+  }
+  isRunning = true;
+
   return () => {
-    if (!isInitialized) {
-      initAll().then(renderMain).finally(showCard);
-    } else {
-      renderMain().finally(showCard);
-    }
+    renderMain().finally(() => {
+      isRunning = false;
+    })
   };
 }
 
