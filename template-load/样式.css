@@ -29,19 +29,21 @@ pre.mermaid {
 }
 
 .nightMode pre.mermaid {
-    background-color: #0d1117;
+    /*background-color: #040610;*/
+    background-color: #000000;
 }
 
 .markmap {
+    width: 100%;
+    min-height: 400px;
     position: relative;
-    height: 400px;
     background-color: #ffffff;
 }
 
 .markmap > svg {
+    display: block;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* 不让图片移动 */
     /*border: 2px solid #ddd;*/
 }
 
@@ -50,7 +52,8 @@ pre.mermaid {
     --markmap-code-color: #ddd;
     --markmap-circle-open-bg: #444;
     --markmap-text-color: #eee;
-    background-color: #0d1117;
+    /*background-color: #0d1117;*/
+    background-color: #000000;
     /*background-color: #151b23;*/
 }
 
@@ -70,7 +73,8 @@ pre.mermaid {
     --fgColor-attention: #d29922;
     --fgColor-danger: #f85149;
     --fgColor-done: #ab7df8;
-    --bgColor-default: #0d1117;
+    /*--bgColor-default: #0d1117;*/
+    --bgColor-default: #000000;
     --bgColor-muted: #151b23;
     --bgColor-neutral-muted: #656c7633;
     --bgColor-attention-muted: #bb800926;

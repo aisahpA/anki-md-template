@@ -35,9 +35,13 @@ const config = {
     theme: 'default', // 'default' | 'base' | 'dark' | 'forest' | 'neutral' | 'null'
     startOnLoad: false,
   },
+
+  /** markmap options */
   markmapOptions: {
     autoFit: true,
-    maxWidth: 300,
+    maxWidth: 400,
+    zoom: true,
+    pan: false,
   }
 };
 
@@ -50,21 +54,24 @@ let AnkiMarkDownIt;
 //------ Initialize Utilities ------
 
 let initAll = function () {
-  try {
-    initDivLog();
+  return new Promise((resolve, reject) => {
+    try {
+      initDivLog();
 
-    initCensorUtil();
+      initCensorUtil();
 
-    AnkiMarkDownIt = markdownit(config.markdownOptions);
-    DivLog.info("Markdown-it initialized.");
+      AnkiMarkDownIt = markdownit(config.markdownOptions);
+      DivLog.info("Markdown-it initialized.");
 
-    initMermaid();
+      initMermaid();
 
-    isInitialized = true;
-  } catch (e) {
-    showCard();
-    DivLog.error("Initialize error: ", e);
-  }
+      isInitialized = true;
+      resolve();
+    } catch (e) {
+      DivLog.error("Initialize error: ", e);
+      reject(e);
+    }
+  });
 }
 
 /**
@@ -213,30 +220,33 @@ let showCard = function () {
  * Renders the main content of the card, including markdown content, Mermaid diagrams, and markdown mindmap.
  */
 let renderMain = function () {
-  try {
+  return new Promise((resolve) => {
+    try {
+      // Render content using Markdown
+      renderMarkDownAll();
+    } catch (error) {
+      DivLog.error('Markdown render error: ', error);
+      return resolve();
+    }
 
-    // Render content using Markdown
-    renderMarkDown();
+    Promise.all([renderMermaidAll(), renderMarkMapAll()])
+      .then(() => {
+        DivLog.info("finish rendering.");
+        resolve();
+      })
+      .catch((error) => {
+        DivLog.error('Render error: ', error);
+        resolve();
+      });
+  });
+};
 
-    // Render Mermaid diagrams
-    renderMermaid();
 
-    // Render markdown mindmap
-    renderMarkMap();
-
-    DivLog.info("finish rendering.")
-  } catch (e) {
-    DivLog.error('Render markdown error: ', e);
-  } finally {
-    showCard();
-  }
+let renderMarkDownAll = function () {
+  document.querySelectorAll('.markdown-body').forEach(renderMarkDownSingle);
 }
 
-let renderMarkDown = function () {
-  document.querySelectorAll('.markdown-body').forEach(renderMarkDownForSingle);
-}
-
-let renderMarkDownForSingle = function (markdownDiv) {
+let renderMarkDownSingle = function (markdownDiv) {
   let text = markdownDiv.innerHTML;
   DivLog.debug("======================================");
   DivLog.debug("Original content：", text);
@@ -264,29 +274,36 @@ let renderMarkDownForSingle = function (markdownDiv) {
   markdownDiv.innerHTML = text;
 }
 
-let renderMermaid = function () {
+let renderMermaidAll = async function () {
   const mermaidElements = document.querySelectorAll("pre.mermaid");
   if (mermaidElements.length > 0) {
     try {
-      mermaid.run({nodes: mermaidElements});
+      await mermaid.run({nodes: mermaidElements});
     } catch (e) {
       DivLog.error("Mermaid rendering failed", e);
     }
   }
 }
 
-let renderMarkMap = function () {
-  document.querySelectorAll(".markmap").forEach(renderMarkMapForSingle);
+let renderMarkMapAll = function () {
+  let divList = document.querySelectorAll(".markmap");
+  if (divList.length > 0) {
+    return [...divList].reduce((promise, div) => {
+      return promise.then(() => renderMarkMapSingle(div));
+    }, Promise.resolve());
+  } else {
+    return Promise.resolve();
+  }
 }
 
-let renderMarkMapForSingle = function (markMapDiv) {
+let renderMarkMapSingle = async function (markMapDiv) {
   try {
     const content = markMapDiv.textContent.trim();
     DivLog.debug('Original markmap content:', content);
 
     // Transform the markmap content to a tree structure
     const transformer = new Transformer();
-    transformer.urlBuilder.providers.jsdelivr = (path) => `https://gcore.jsdelivr.net/npm/${path}`;
+    transformer.urlBuilder.setProvider('jsdelivr', (path) => `https://gcore.jsdelivr.net/npm/${path}`);
     const {root, features} = transformer.transform(content);
 
     delete features.hljs; // The project has already loaded hljs
@@ -296,16 +313,10 @@ let renderMarkMapForSingle = function (markMapDiv) {
       markmap.loadJS(scripts, {getMarkmap: () => markmap,});
     }
 
-    // Create an SVG container
-    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    markMapDiv.innerHTML = '';
-    markMapDiv.appendChild(svg);
-
     // Render the mind map
-    markmap.Markmap.create(svg, config.markmapOptions, root);
+    markMapDiv.innerHTML = '<svg></svg>';
+    await markmap.Markmap.create(markMapDiv.firstChild, config.markmapOptions, root);
 
-    // Optional
-    svg.classList.remove("markmap");
   } catch (e) {
     DivLog.error("MarkMap rendering failed", e);
   }
@@ -316,10 +327,9 @@ let renderMarkMapForSingle = function (markMapDiv) {
 let getRunFunction = function () {
   return () => {
     if (!isInitialized) {
-      initAll()
-      renderMain();
+      initAll().then(renderMain).finally(showCard);
     } else {
-      renderMain();
+      renderMain().finally(showCard);
     }
   };
 }
