@@ -5,24 +5,33 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     /** log level： debug、info、error */
     logLevel: 'error',
 
+    plugins: {
+      markdownitMark: true,
+      markdownitSub: false,
+      markdownitSup: false,
+      markdownitKatex: true,
+    },
+
     /** List of js to load */
-    jsUrl: {
-      markdownit: [
-        "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
-        "https://gcore.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js",
-        "https://gcore.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js",
-        "https://gcore.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js",
-        "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
-      ],
-      mermaid: [
-        "https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js",
-      ],
-      markmap: [
-        "https://gcore.jsdelivr.net/npm/d3@7/dist/d3.min.js",
-        "https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/dist/browser/index.iife.min.js",
-        "https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.min.js",
-        "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js",
-      ]
+    resourceUrl: {
+      // markdown-it
+      markdownit: "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
+      highlight: "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
+      // markdown-it-plugins
+      markdownitMark: "https://gcore.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js",
+      markdownitSub: "https://gcore.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js",
+      markdownitSup: "https://gcore.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js",
+      // katex
+      markdownTexMath: "https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/texmath.min.js",
+      markdownTexMathCss: "https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/css/texmath.min.css",
+      katex: "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js",
+      katexCss: "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.css",
+      // mermaid
+      mermaid: "https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js",
+      // markmap
+      d3: "https://gcore.jsdelivr.net/npm/d3@7/dist/d3.min.js",
+      markmapLib: "https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/dist/browser/index.iife.min.js",
+      markmapView: "https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.min.js",
     },
 
     /** Markdown-it options */
@@ -44,6 +53,22 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
         }
         return '';
       },
+    },
+
+    /** katex $ math */
+    texMathOptions: {
+      // https://www.npmjs.com/package/markdown-it-texmath
+      // dollars: $...$ or $$...$$
+      delimiters: ['dollars'],
+      // https://katex.org/docs/options
+      katexOptions: {
+        output: 'html',
+        throwOnError: false,
+        strict: (errorCode, errorMsg, token) => {
+          DivLog.warn('Warn: ' + errorCode + ' ' + errorMsg + ' ' + token);
+          return "ignore";
+        },
+      }
     },
 
     /** Mermaid options */
@@ -93,6 +118,11 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     });
   }
 
+  let loadResources = function (...urls) {
+    return Promise.all(urls.map(url => loadResource(url)));
+  }
+
+
   let DivLog;
   let CensorUtil;
   let AnkiMarkDownIt;
@@ -100,35 +130,68 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
 //------ Initialize Utilities ------
 
   let initMarkdownit = async function () {
-    if (typeof AnkiMarkDownIt === 'undefined') {
-      await Promise.all(config.jsUrl.markdownit.map(loadResource));
-      initCensorUtil();
-      AnkiMarkDownIt = markdownit(config.markdownOptions);
-      AnkiMarkDownIt.use(markdownitMark).use(markdownitSub).use(markdownitSup)
-      DivLog.info("Markdown-it initialized.");
+    if (typeof AnkiMarkDownIt !== 'undefined') return;
+
+    // basic
+    await loadResources(config.resourceUrl.markdownit, config.resourceUrl.highlight);
+    AnkiMarkDownIt = markdownit(config.markdownOptions);
+
+    // plugins
+    if (config.plugins.markdownitMark) {
+      await loadResource(config.resourceUrl.markdownitMark);
+      AnkiMarkDownIt.use(window.markdownitMark);
     }
-  }
+    if (config.plugins.markdownitSub) {
+      await loadResource(config.resourceUrl.markdownitSub);
+      AnkiMarkDownIt.use(window.markdownitSub);
+    }
+    if (config.plugins.markdownitSup) {
+      await loadResource(config.resourceUrl.markdownitSup);
+      AnkiMarkDownIt.use(window.markdownitSup);
+    }
+
+    // katex
+    if (config.plugins.markdownitKatex) {
+      await loadResources(
+        config.resourceUrl.markdownTexMath,
+        config.resourceUrl.markdownTexMathCss,
+        config.resourceUrl.katex,
+        config.resourceUrl.katexCss
+      );
+      config.texMathOptions.engine = window.katex;
+      AnkiMarkDownIt.use(window.texmath, config.texMathOptions);
+    }
+
+    initCensorUtil();
+
+    DivLog.info("Markdown-it initialized.");
+  };
 
   let initMermaid = async function () {
-    if (typeof mermaid === 'undefined') {
-      await Promise.all(config.jsUrl.mermaid.map(loadResource));
-      let isNight = document.body.classList.contains("nightMode");
-      if (isNight) {
-        config.mermaidOptions.theme = "dark";
-      }
-      mermaid.initialize(config.mermaidOptions);
-      DivLog.info("Mermaid initialized.");
+    if (typeof mermaid !== 'undefined') return;
+
+    await loadResource(config.resourceUrl.mermaid)
+
+    let isNight = document.body.classList.contains("nightMode");
+    if (isNight) {
+      config.mermaidOptions.theme = "dark";
     }
+
+    mermaid.initialize(config.mermaidOptions);
+    DivLog.info("Mermaid initialized.");
   }
 
   let initMarkMap = async function () {
-    if (typeof markmap === 'undefined') {
-      for (let i = 0; i < config.jsUrl.markmap.length; i++) {
-        await loadResource(config.jsUrl.markmap[i])
-      }
-      globalThis.Transformer = markmap.Transformer;
-      DivLog.info("MarkMap initialized.");
+    if (typeof markmap !== 'undefined') return;
+
+    await loadResource(config.resourceUrl.d3);
+    await loadResources(config.resourceUrl.markmapLib, config.resourceUrl.markmapView);
+    if (!config.plugins.markdownitKatex) {
+      await loadResources(config.resourceUrl.katex, config.resourceUrl.katexCss);
     }
+
+    globalThis.Transformer = markmap.Transformer;
+    DivLog.info("MarkMap initialized.");
   }
 
   /**
@@ -299,7 +362,8 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     if (elements.length === 0) return;
 
     await initMarkdownit();
-    elements.forEach(renderMarkDownSingle);
+
+    await Promise.all([...elements].map(renderMarkDownSingle))
   }
 
   let renderMarkDownSingle = function (markdownDiv) {
@@ -352,9 +416,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
 
     await initMarkMap();
 
-    await [...elements].reduce((promise, div) => {
-      return promise.then(() => renderMarkMapSingle(div));
-    }, Promise.resolve());
+    await Promise.all([...elements].map(renderMarkMapSingle));
   }
 
   let renderMarkMapSingle = async function (markMapDiv) {
@@ -375,9 +437,8 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
         markmap.loadJS(scripts, {getMarkmap: () => markmap,});
       }
 
-      let afterDiv = insertNewDiv(markMapDiv, "hidden", '<svg></svg>');
+      let afterDiv = insertNewDiv(markMapDiv, "markmap", '<svg></svg>');
       await markmap.Markmap.create(afterDiv.firstChild, config.markmapOptions, root);
-      afterDiv.classList.remove("hidden");
 
     } catch (e) {
       DivLog.error("MarkMap rendering failed", e);
