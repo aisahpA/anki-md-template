@@ -10,6 +10,10 @@
     text-align: left; /* left-左对齐，center-居中对齐 */
 }
 
+.card.nightMode {
+    background-color: #000000;
+}
+
 body {
     opacity: 0;
 }
@@ -28,8 +32,8 @@ body {
 }
 
 pre code[class*="language-"] {
-    /*white-space: pre-wrap;*/
-    /*font-size: 16px;*/
+    white-space: pre-wrap;
+    font-size: 16px;
 }
 
 pre.mermaid {
