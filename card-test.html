@@ -16,7 +16,6 @@
         margin: 0;
     }
 </style>
-<!--<body class="card nightMode">-->
 <body class="card">
 <div id="qa">
 <!-- prettier-ignore -->
@@ -166,7 +165,7 @@ flowchart LR
 ## markmap 图表
 [markmap 文档地址](https://markmap.js.org/docs/markmap)
     </div>
-        <div class="markdown-body original">
+    <div class="markdown-body original">
 ### markmap 图表1
     </div>
     <div class="markmap original">
@@ -240,19 +239,19 @@ title: markmap
 console.log('hello, JavaScript')
 ```
     </div>
+
+    <script>logLevel = 'error'</script>
+    <script src="template/_anki-markdown.js"></script>
 </div>
 
 
-<script>globalThis.logLevel = 'error'</script>
-<!--<script type="module" src="template/_anki-markdown-import.js"></script>-->
-<script type="module" src="template/_anki-markdown-load.js"></script>
-<script>if (globalThis.ankiMarkDownMain) ankiMarkDownMain();</script>
-
 <script>
   // 添加暗黑模式
-  const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // isDarkMode = true;
   if (isDarkMode) {
     document.body.classList.add('nightMode');
+    document.documentElement.classList.add('night-mode');
   }
 </script>
 </body>

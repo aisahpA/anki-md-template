@@ -1,5 +1,20 @@
-// Desktop and iOS need to load only once, Android will reload every time
-if (typeof window.ankiMarkDownMain === 'undefined') {
+/**
+ * @version 1.0.0
+ * @author aisahpA
+ * @email chenxiangu2010@163.com
+ * @github https://github.com/aisahpA/anki-md-template/blob/master/template/_anki-markdown.js
+ * @license MIT
+ *
+ * @fileoverview Anki Markdown + KaTeX + Mermaid + markmap.
+ */
+(function () {
+  "use strict";
+
+  // Desktop and iOS load only once, Android will reload every time
+  if (typeof window.ankiMarkDownMain !== 'undefined') {
+    ankiMarkDownMain();
+    return;
+  }
 
   const config = {
     /** log level： debug、info、error */
@@ -49,7 +64,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
           }
         } else if (lang === "mermaid") {
           // Handle mermaid blocks specifically for the plugin
-          return `<pre class="mermaid hidden">${str}</pre>`;
+          return `<pre class="mermaid">${str}</pre>`;
         }
         return '';
       },
@@ -89,7 +104,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
   /**
    * Loads a JavaScript or css resource.
    */
-  let loadResource = function (url) {
+  function loadResource(url) {
     return new Promise((resolve, reject) => {
       let element;
       if (url.endsWith(".js")) {
@@ -118,7 +133,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     });
   }
 
-  let loadResources = function (...urls) {
+  function loadResources(...urls) {
     return Promise.all(urls.map(url => loadResource(url)));
   }
 
@@ -129,7 +144,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
 
 //------ Initialize Utilities ------
 
-  let initMarkdownit = async function () {
+  async function initMarkdownit() {
     if (typeof AnkiMarkDownIt !== 'undefined') return;
 
     // basic
@@ -165,9 +180,9 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     initCensorUtil();
 
     DivLog.info("Markdown-it initialized.");
-  };
+  }
 
-  let initMermaid = async function () {
+  async function initMermaid() {
     if (typeof mermaid !== 'undefined') return;
 
     await loadResource(config.resourceUrl.mermaid)
@@ -181,7 +196,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     DivLog.info("Mermaid initialized.");
   }
 
-  let initMarkMap = async function () {
+  async function initMarkMap() {
     if (typeof markmap !== 'undefined') return;
 
     await loadResource(config.resourceUrl.d3);
@@ -190,7 +205,6 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
       await loadResources(config.resourceUrl.katex, config.resourceUrl.katexCss);
     }
 
-    globalThis.Transformer = markmap.Transformer;
     DivLog.info("MarkMap initialized.");
   }
 
@@ -200,7 +214,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
    * Each log message includes a timestamp and is styled according to its level.
    * Logs are appended to a dedicated container in the DOM, which is created if it doesn't exist.
    */
-  let initDivLog = function () {
+  function initDivLog() {
     if (typeof DivLog === 'undefined') {
       DivLog = {
         currentLevel: 4,
@@ -276,14 +290,9 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
    * during Markdown processing, ensuring they are not altered by intermediate transformations.
    * This is useful when rendering Markdown content that contains math formulas which should be preserved as-is.
    */
-  let initCensorUtil = function () {
+  function initCensorUtil() {
     if (typeof CensorUtil === 'undefined') {
       CensorUtil = {
-        /**
-         * Regular expression to match LaTeX math expressions:
-         * - $$...$$
-         * - $(...)$
-         */
         MathJs_Reg: /(\\\[[\s\S]*?\\])|(\\\([\s\S]*?\\\))/g,
         MathJs_Replace: "ANKI_MATHJS_REPLACE",
         censor: function (note_text, regexp, mask) {
@@ -318,46 +327,35 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
    * This method is primarily intended for Android devices, as they load content directly on new pages,
    * whereas desktop and iOS platforms handle content rendering asynchronously.
    */
-  let showCard = function () {
-    setTimeout(() => {
-      document.body.classList.add("visible");
-    }, 0)
+  function showCard() {
+    document.querySelectorAll('.original').forEach((el) => {
+      el.classList.remove('original');
+    })
   }
 
-  let insertNewDiv = function (originalElement, className, innerHTML) {
-    let afterDiv = document.createElement('div');
-    afterDiv.className = className;
-    afterDiv.innerHTML = innerHTML;
-    originalElement.parentNode.insertBefore(afterDiv, originalElement.nextSibling);
-    return afterDiv;
-  }
 
 //------ Convert content ------
 
   /**
    * Renders the main content of the card, including markdown content, Mermaid diagrams, and markdown mindmap.
    */
-  let renderMain = function () {
-    return new Promise((resolve) => {
-      renderMarkDownAll()
-        .then(renderMermaidAll)
-        .then(renderMarkMapAll)
-        .then(() => {
-          DivLog.info("finish rendering.");
-          resolve();
-        })
-        .catch((error) => {
-          DivLog.error('Render error: ', error);
-          resolve();
-        })
-        .finally(() => {
-          showCard();
-        });
-    });
-  };
+  function renderMain() {
+    renderMarkDownAll()
+      .then(renderMermaidAll)
+      .then(renderMarkMapAll)
+      .then(() => {
+        DivLog.info("finish rendering.");
+      })
+      .catch((error) => {
+        DivLog.error('Render error: ', error);
+      })
+      .finally(() => {
+        showCard();
+      });
+  }
 
 
-  let renderMarkDownAll = async function () {
+  async function renderMarkDownAll() {
     let elements = document.querySelectorAll('.markdown-body');
     if (elements.length === 0) return;
 
@@ -366,7 +364,7 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     await Promise.all([...elements].map(renderMarkDownSingle))
   }
 
-  let renderMarkDownSingle = function (markdownDiv) {
+  function renderMarkDownSingle(markdownDiv) {
     let text = markdownDiv.innerHTML;
     DivLog.debug("======================================");
     DivLog.debug("Original content：", text);
@@ -391,26 +389,23 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
     DivLog.debug("After restoring hidden content:", text);
 
-    insertNewDiv(markdownDiv, "markdown-body", text);
+    markdownDiv.innerHTML = text;
   }
 
-  let renderMermaidAll = async function () {
+  async function renderMermaidAll() {
     const elements = document.querySelectorAll("pre.mermaid");
     if (elements.length === 0) return;
 
     try {
       await initMermaid();
       await mermaid.run({nodes: elements});
-      elements.forEach(element => {
-        element.classList.remove("hidden");
-      });
       DivLog.debug("Mermaid rendering completed.")
     } catch (e) {
       DivLog.error("Mermaid rendering failed", e);
     }
   }
 
-  let renderMarkMapAll = async function () {
+  async function renderMarkMapAll() {
     let elements = document.querySelectorAll(".markmap");
     if (elements.length === 0) return;
 
@@ -419,13 +414,13 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
     await Promise.all([...elements].map(renderMarkMapSingle));
   }
 
-  let renderMarkMapSingle = async function (markMapDiv) {
+  async function renderMarkMapSingle(markMapDiv) {
     try {
       const content = extractTextForMarkMap(markMapDiv.innerHTML);
       DivLog.debug('Original markmap content:', content);
 
       // Transform the markmap content to a tree structure
-      const transformer = new Transformer();
+      const transformer = new markmap.Transformer();
       transformer.urlBuilder.setProvider('jsdelivr', (path) => `https://gcore.jsdelivr.net/npm/${path}`);
       const {root, features} = transformer.transform(content);
 
@@ -437,15 +432,15 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
         markmap.loadJS(scripts, {getMarkmap: () => markmap,});
       }
 
-      let afterDiv = insertNewDiv(markMapDiv, "markmap", '<svg></svg>');
-      await markmap.Markmap.create(afterDiv.firstChild, config.markmapOptions, root);
+      markMapDiv.innerHTML = '<svg></svg>';
+      await markmap.Markmap.create(markMapDiv.firstChild, config.markmapOptions, root);
 
     } catch (e) {
       DivLog.error("MarkMap rendering failed", e);
     }
   }
 
-  let extractTextForMarkMap = function (html) {
+  function extractTextForMarkMap(html) {
     const replacements = [
       {pattern: /<br\s*\/?[^>]*>/gi, replacement: "\n"},
       {pattern: /<\/?pre[^>]*>/gi, replacement: ""},
@@ -477,45 +472,26 @@ if (typeof window.ankiMarkDownMain === 'undefined') {
 
 //------ Main ------
 
-  let isRunning = false;
-
-  let getRunFunction = function () {
-    initDivLog();
-    if (isRunning) {
-      DivLog.warn("Function is already running, skipping this call.");
-      return () => {
-      };
-    }
-    isRunning = true;
-
-    return () => {
-      renderMain().finally(() => {
-        isRunning = false;
-      })
-    };
-  }
-
+  initDivLog();
 
   /**
    * div.markdown-body
    *
-   * div.markmap
+   * div.markdown-body > Markdown code block in mermaid format(```mermaid)
    *
-   * pre.mermaid  or  Markdown code block in mermaid format
+   * div.markmap
    *
    */
   window.ankiMarkDownMain = function () {
-
-    const run = getRunFunction();
-
     if (globalThis.onUpdateHook) {
       // Use Anki's built-in onUpdateHook to ensure execution order
-      onUpdateHook.push(run);
+      onUpdateHook.unshift(renderMain);
     } else {
-      run();
+      renderMain();
     }
   }
-}
 
 //  Run main
-ankiMarkDownMain();
+  ankiMarkDownMain();
+
+})();

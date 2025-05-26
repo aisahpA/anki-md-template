@@ -1,11 +1,14 @@
-# 可以解析`markdown`语法的`Anki`卡片模板
-> 特点：纯文本代码模板，无需任何插件，复制就能用
+# 解析`markdown`语法的`Anki`卡片模板
 
 > 核心 markdown 解析器 👉[markdown-it](https://github.com/markdown-it/markdown-it)，
+
 > 数学公式解析器：[KaTeX](https://github.com/KaTeX/KaTeX)
 
+> Mermaid 图形解析器：[Mermaid](https://github.com/mermaid-js/mermaid)
+
+> mindmap 渲染器：[markmap](https://github.com/markmap/markmap)
+
 ### 👇 目前的功能
->（有什么改进可以在 issue 里提, 有能力可以自行修改提 pr,喜欢的兄弟姐妹们可以点个star支持一下）
 
 - 编辑只需按照 markdown 语法编写
 
@@ -24,4 +27,4 @@
 ---
 
 ### 卡片模板创建指引
-直接导入仓库中牌组：`Markdown模板导入专用.apkg`）
+直接导入仓库中牌组：`Markdown 模板导入专用.apkg`）
