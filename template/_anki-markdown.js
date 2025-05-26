@@ -6,15 +6,22 @@
  * @license MIT
  *
  * @fileoverview Anki Markdown + KaTeX + Mermaid + markmap.
+ * 1. div.markdown-body
+ * 2. Markdown code block in mermaid format(\`\`\`mermaid)
+ * 3. div.markmap
  */
 (function () {
   "use strict";
 
   // Desktop and iOS load only once, Android will reload every time
-  if (typeof window.ankiMarkDownMain !== 'undefined') {
+  if (window._ankiMarkdownInitialized) {
     ankiMarkDownMain();
     return;
   }
+  window._ankiMarkdownInitialized = true;
+
+
+//------ Config ------
 
   const config = {
     /** log level： debug、info、error */
@@ -101,48 +108,12 @@
     }
   };
 
-  /**
-   * Loads a JavaScript or css resource.
-   */
-  function loadResource(url) {
-    return new Promise((resolve, reject) => {
-      let element;
-      if (url.endsWith(".js")) {
-        element = document.createElement("script");
-        element.src = url;
-      } else if (url.endsWith(".css")) {
-        element = document.createElement("link");
-        element.rel = "stylesheet";
-        element.href = url;
-      } else {
-        reject(new Error(`Unsupported resource type for ${url}`));
-      }
-      element.onload = () => {
-        DivLog.info(`Successfully loaded ${url}`);
-        resolve();
-      };
-      element.onerror = (error) => {
-        DivLog.error(`Failed to load ${url}`, error);
-        // Remove the element from DOM
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
-        }
-        reject(error);
-      }
-      document.head.appendChild(element);
-    });
-  }
 
-  function loadResources(...urls) {
-    return Promise.all(urls.map(url => loadResource(url)));
-  }
-
+//------ Initialize Utilities ------
 
   let DivLog;
   let CensorUtil;
   let AnkiMarkDownIt;
-
-//------ Initialize Utilities ------
 
   async function initMarkdownit() {
     if (typeof AnkiMarkDownIt !== 'undefined') return;
@@ -319,6 +290,42 @@
     }
   }
 
+  /**
+   * Loads a JavaScript or css resource.
+   */
+  function loadResource(url) {
+    return new Promise((resolve, reject) => {
+      let element;
+      if (url.endsWith(".js")) {
+        element = document.createElement("script");
+        element.src = url;
+      } else if (url.endsWith(".css")) {
+        element = document.createElement("link");
+        element.rel = "stylesheet";
+        element.href = url;
+      } else {
+        reject(new Error(`Unsupported resource type for ${url}`));
+      }
+      element.onload = () => {
+        DivLog.info(`Successfully loaded ${url}`);
+        resolve();
+      };
+      element.onerror = (error) => {
+        DivLog.error(`Failed to load ${url}`, error);
+        // Remove the element from DOM
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+        reject(error);
+      }
+      document.head.appendChild(element);
+    });
+  }
+
+  function loadResources(...urls) {
+    return Promise.all(urls.map(url => loadResource(url)));
+  }
+
 
 //------ Controls page display ------
 
@@ -340,6 +347,7 @@
    * Renders the main content of the card, including markdown content, Mermaid diagrams, and markdown mindmap.
    */
   function renderMain() {
+    initDivLog();
     renderMarkDownAll()
       .then(renderMermaidAll)
       .then(renderMarkMapAll)
@@ -353,7 +361,6 @@
         showCard();
       });
   }
-
 
   async function renderMarkDownAll() {
     let elements = document.querySelectorAll('.markdown-body');
@@ -375,19 +382,17 @@
       DivLog.debug("After hide \\ (...\\) 和 \\ [...\\]：" + math_tag_matches.length + " places", text);
     }
 
-    // Predefined entity map for HTML entity decoding
-    const entities = {amp: '&', lt: '<', gt: '>', nbsp: ' ', quot: '"', '#39': "'"};
-
     // Trim whitespace and decode specific HTML entities in one pass
-    text = text.trim().replace(/&(amp|lt|gt|nbsp|quot|#39);/g, (_, type) => entities[type] || '')
-      .replace(/<br\s*\/?>/gi, '\n');  // Replace <br> and <br/> tags with newline characters
+    text = escapeHtmlForMarkdown(text);
     DivLog.debug("After reverse some HTML tags：", text);
 
     text = AnkiMarkDownIt.render(text);
     DivLog.debug("After markdown-it render:", text);
 
-    text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
-    DivLog.debug("After restoring hidden content:", text);
+    if (math_tag_matches.length > 0) {
+      text = CensorUtil.decensor(text, CensorUtil.MathJs_Replace, math_tag_matches);
+      DivLog.debug("After restoring hidden content:", text);
+    }
 
     markdownDiv.innerHTML = text;
   }
@@ -414,9 +419,13 @@
     await Promise.all([...elements].map(renderMarkMapSingle));
   }
 
+  /**
+   * Renders a markmap element.
+   * Does not support math formula rendering on iOS
+   */
   async function renderMarkMapSingle(markMapDiv) {
     try {
-      const content = extractTextForMarkMap(markMapDiv.innerHTML);
+      const content = escapeHtmlForMarkdown(markMapDiv.innerHTML);
       DivLog.debug('Original markmap content:', content);
 
       // Transform the markmap content to a tree structure
@@ -440,48 +449,18 @@
     }
   }
 
-  function extractTextForMarkMap(html) {
-    const replacements = [
-      {pattern: /<br\s*\/?[^>]*>/gi, replacement: "\n"},
-      {pattern: /<\/?pre[^>]*>/gi, replacement: ""},
-      {pattern: /<\/?span[^>]*>/gi, replacement: ""},
-      {
-        pattern: /<(\/?(?:ol|ul|div|li))[^>]*>/gi, replacement: (match, tag) => {
-          switch (tag.toLowerCase()) {
-            case 'li':
-              return "- ";
-            case '/ol':
-            case '/ul':
-            case '/div':
-              return "\n";
-            default:
-              return "";
-          }
-        }
-      },
-      {pattern: /&nbsp;/gi, replacement: " "},
-      {pattern: /&tab;/gi, replacement: "	"},
-      {pattern: /&gt;/gi, replacement: ">"},
-      {pattern: /&lt;/gi, replacement: "<"},
-      {pattern: /&amp;/gi, replacement: "&"}
-    ];
+  function escapeHtmlForMarkdown(html) {
+    const entities = {amp: '&', lt: '<', gt: '>', nbsp: ' ', quot: '"', '#39': "'"};
 
-    return replacements.reduce((acc, {pattern, replacement}) => acc.replace(pattern, replacement), html);
+    // Trim whitespace and decode specific HTML entities in one pass
+    return html.trim()
+      .replace(/&(amp|lt|gt|nbsp|quot|#39);/g, (_, type) => entities[type] || '')
+      .replace(/<br\s*\/?>/gi, '\n');  // Replace <br> and <br/> tags with newline characters
   }
 
 
 //------ Main ------
 
-  initDivLog();
-
-  /**
-   * div.markdown-body
-   *
-   * div.markdown-body > Markdown code block in mermaid format(```mermaid)
-   *
-   * div.markmap
-   *
-   */
   window.ankiMarkDownMain = function () {
     if (globalThis.onUpdateHook) {
       // Use Anki's built-in onUpdateHook to ensure execution order

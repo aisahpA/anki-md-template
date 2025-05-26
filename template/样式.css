@@ -3,13 +3,10 @@
 @import url('https://gcore.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css');
 
 :root {
-    /*--canvas: #f5f5f5;*/
     --canvas: #ffffff;
 }
 
-:root.night-mode {
-    /*--canvas: #2c2c2c;*/
-    /*--canvas: #0d1117;*/
+:root.night-mode, .nightMode {
     --canvas: #000000;
 }
 
@@ -31,15 +28,6 @@ pre code[class*="language-"] {
     font-size: 16px;
 }
 
-pre.mermaid {
-    padding: 0;
-    background-color: var(--canvas);
-}
-
-.nightMode pre.mermaid {
-    background-color: var(--canvas);
-}
-
 .markmap {
     width: 100%;
     min-height: 400px;
@@ -58,7 +46,6 @@ pre.mermaid {
     --markmap-code-color: #ddd;
     --markmap-circle-open-bg: #444;
     --markmap-text-color: #eee;
-    background-color: var(--canvas);
 }
 
 /* Anki 似乎不支持 prefers-color-scheme，换一种方式设置暗黑模式 */
