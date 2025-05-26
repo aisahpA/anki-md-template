@@ -1,0 +1,14 @@
+<div class="h1">Question</div>
+<div class="original markdown-body">{{Question}}</div>
+
+
+<!-- _anki_markdown.js 在 template 目录下面，需要放到 Anki 的媒体库（collection.media）中 -->
+<script type="module" src="_anki-markdown.js"></script>
+<script>if (!globalThis.AnkiDroidJS) ankiMarkDownMain()</script>
+
+<!-- 也可以不使用上面两个 script，直接将 template/_anki_markdown.js 的内容拷贝过来 -->
+<!--
+<script>
+    template/_anki_markdown.js 中所有内容拷贝过来
+</script>
+-->
