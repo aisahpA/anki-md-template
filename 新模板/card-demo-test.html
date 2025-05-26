@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="cn" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="样式.css">
+    <title>Anki-Markdown 模板测试</title>
+</head>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;      /* 垂直居中 */
+        min-height: 100vh;        /* 让 body 占满整个视口高度 */
+        margin: 0;
+    }
+</style>
+<body class="card">
+<div id="qa">
+<!-- prettier-ignore -->
+<div class="markdown-body original">
+测试 Markdown 格式
+***
+# 一级标题
+## 二级标题
+### 三级标题
+**加粗**
+*斜体*
+***加粗斜体***
+> 引用
+引用第二行
+引用第三行
+
+- 无序列表
+- 无序列表
+- 无序列表
+
+1. 有序列表 1
+2. 有序列表 2
+3. 有序列表 3
+
+上标^2^、上标<sup>2</sup>
+下标~2~、H~2~0、H<sub>2</sub>0
+
+==高亮Mark==
+</div>
+<div class="markdown-body original">
+### 代码块
+ `代码块 1`
+```c
+#include &lt;stdio.h&gt;
+int factorial(int n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+```
+代码块 2
+   ```python
+   sql = "SELECT * FROM your_table"
+   cursor.execute(sql)
+   ```
+</div>
+
+<div class="markdown-body original">
+### 数学公式 - \ ( 由 Anki 解析
+**行内公式：**
+-  \(E=mc^2\)、 \(\lfloor i/2 \rfloor\)、\(f(x)\)、\(A\)
+- Does \(\sum_{k = 1}^{\infty}\frac{1}{k}\) converge?
+- 勾股定理：\(a^2 + b^2 = c^2\)，其中 \(c\) 是斜边
+- \({\Gamma(z) = \int_0^\infty t^{z-1}e^{-t}dt\,.}\)
+- \(\begin{pmatrix} a &amp; b \\ c &amp; d \end{pmatrix}\)、 \(\int_{a}^{b} f(x) \, dx\)
+
+**块级公式：**
+\[\frac{d}{dx}(x^n) = nx^{n-1}\]
+\[\sum_{k=1}^n k = \frac{n(n+1)}{2}\]
+
+**多行公式：**
+行内：
+\(f(x) =
+\left\{
+  \begin{aligned}
+    &amp; \lambda e^{-\lambda x} &amp; x &gt; 0 \\
+    &amp; 0 &amp; x \leq 0 \\
+  \end{aligned}
+\right.\)
+块级：
+\[f(x) =
+\left\{
+  \begin{aligned}
+    &amp; \lambda e^{-\lambda x} &amp; x &gt; 0 \\
+    &amp; 0 &amp; x \leq 0 \\
+  \end{aligned}
+\right.\]
+
+忽略解析警告：
+\(2^{层数-1}\)
+
+非法数学公式：
+\(\left\{()\right\)
+
+不解析为特殊字符：
+(C) 不解析为 ©
+(R) 不解析为 ®
+
+</div>
+
+<div class="original markdown-body">
+### 数学公式 - \$模式
+config.plugins.markdownitKatex 为 true时，支持 \$ 数学公式，
+    否则请转换为 `\ (...\ )` 或 `\ [...\ ]`
+$E=mc^2$
+$$a^2 + b^2 = c^2$$
+And AsciiMath:
+$$
+e = sum_(n=0)^oo 1 / n!
+$$
+</div>
+
+<div class="markdown-body original">
+### 链接与图片
+[百度](https://www.baidu.com)
+ ![图片链接](https://www.baidu.com/img/bd_logo1.png)
+</div>
+
+<div class="markdown-body original">
+## Mermaid 图表
+```mermaid
+%% Obsidian Mermaid流程图语法
+%% 方向：从上到下(TB)
+%% 节点形状：圆角矩形
+%% 颜色定义：终止状态红色，运行状态绿色
+
+flowchart LR
+    classDef startend fill:#90EE90,stroke:#006400
+    classDef process fill:#87CEEB,stroke:#1E90FF
+    classDef decision fill:#FFB6C1,stroke:#FF6347
+    classDef terminal fill:#FFA07A,stroke:#8B0000
+
+    A([新建状态 NEW]) -->|"start()"| B(可运行状态 RUNNABLE)
+    B -->|CPU调度| C{运行状态 RUNNING}
+    C -->|"时间片用完/yield()"| B
+    C -->|执行结束| D([终止状态 TERMINATED])
+
+    B -->|"wait()/join()/LockSupport.park()"| E(等待状态 WAITING)
+    B -->|"sleep()/wait(timeout)"| F(超时等待状态 TIMED_WAITING)
+    B -->|synchronized竞争失败| G(阻塞状态 BLOCKED)
+
+    E -->|"notify()/notifyAll()"| B
+    F -->|超时自动恢复| B
+    G -->|获取锁| B
+
+    %%D -.->|不可逆| A
+    E -.->|无法直接唤醒| B
+    F -.->|自动恢复机制| B
+    G -.->|锁释放| B
+
+    style A fill:#98FB98,stroke:#228B22
+    style D fill:#FF6347,stroke:#8B0000
+    style G fill:#DDA0DD,stroke:#9400D3
+```
+</div>
+
+    <div class="markdown-body original">
+## markmap 图表
+[markmap 文档地址](https://markmap.js.org/docs/markmap)
+    </div>
+    <div class="markdown-body original">
+### markmap 图表1
+    </div>
+    <div class="markmap original">
+- markmap <br>
+  - autoloader
+  - transformer
+  - view
+    </div>
+    <div class="markdown-body original">
+### markmap 图表2
+    </div>
+    <div class="markmap original">
+---
+title: markmap
+---
+
+## Links
+
+- [Website](https://markmap.js.org/)
+- [GitHub](https://github.com/gera2ld/markmap)
+
+## Related Projects
+
+- [coc-markmap](https://github.com/gera2ld/coc-markmap) for Neovim
+- [markmap-vscode](https://marketplace.visualstudio.com/items?itemName=gera2ld.markmap-vscode) for VSCode
+- [eaf-markmap](https://github.com/emacs-eaf/eaf-markmap) for Emacs
+
+## Features
+
+Note that if blocks and lists appear at the same level, the lists will be ignored.
+
+### Lists
+
+- **strong** ~~del~~ *italic* ==highlight==
+- `inline code`
+- [x] checkbox
+- Katex: $x = {-b \pm \sqrt{b^2-4ac} \over 2a}$ <!-- markmap: fold -->
+  - [More Katex Examples](#?d=gist:af76a4c245b302206b16aec503dbe07b:katex.md)
+- Now we can wrap very very very very long text based on `maxWidth` option
+- Ordered list
+  1. item 1
+  2. item 2
+
+### Blocks
+
+```js
+console.log('hello, JavaScript')
+```
+
+| Products | Price |
+|-|-|
+| Apple | 4 |
+| Banana | 2 |
+
+![](https://markmap.js.org/favicon.png)
+    </div>
+
+    <div class="markdown-body original">
+### markmap 图表3
+    </div>
+    <div class="markmap original">
+---
+title: markmap
+---
+
+### Lists
+- Katex: $x = {-b \pm \sqrt{b^2-4ac} \over 2a}$
+
+### Blocks
+```js
+console.log('hello, JavaScript')
+```
+    </div>
+
+    <script>logLevel = 'error'</script>
+    <script type="module" src="_anki-markdown.js"></script>
+</div>
+
+
+<script>
+  // 添加暗黑模式
+  let isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // isDarkMode = true;
+  if (isDarkMode) {
+    document.body.classList.add('nightMode');
+    document.documentElement.classList.add('night-mode');
+  }
+</script>
+</body>
+</html>
