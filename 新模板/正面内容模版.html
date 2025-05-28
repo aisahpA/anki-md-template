@@ -3,13 +3,14 @@
 </div>
 
 
-<!-- _anki_markdown.js 在 template 目录下面，需要放到 Anki 的媒体库（collection.media）中 -->
+<!-- _anki_markdown.js 需要放到 Anki 的媒体库（collection.media）中 -->
+<!-- 如果不使用 type="module" 会导致切换卡片时有轻微的闪烁 -->
 <script type="module" src="_anki-markdown.js"></script>
 <script>if (!globalThis.AnkiDroidJS) ankiMarkDownMain()</script>
 
-<!-- 也可以不使用上面两个 script，直接将 template/_anki_markdown.js 的内容拷贝过来 -->
+<!-- 也可以不使用上面两个 script 标签，直接将 _anki_markdown.js 的内容拷贝过来 -->
 <!--
 <script>
-    template/_anki_markdown.js 中所有内容拷贝过来
+    _anki_markdown.js 中所有内容拷贝过来
 </script>
 -->
