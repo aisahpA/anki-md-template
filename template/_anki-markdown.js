@@ -23,6 +23,9 @@
 
 //------ Config ------
 
+  const jsdelivr = (/** @type {string} */ repo) => `https://gcore.jsdelivr.net/npm/${repo}`
+
+
   const config = {
     /** log level： debug、info、error */
     logLevel: 'error',
@@ -37,23 +40,28 @@
     /** List of js to load */
     resourceUrl: {
       // markdown-it
-      markdownit: "https://gcore.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js",
+      markdownit: jsdelivr("markdown-it@14.1.0/dist/markdown-it.min.js"),
       highlight: "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js",
+      // css
+      markdownLightCss: jsdelivr("github-markdown-css@5.8.1/github-markdown-light.min.css"),
+      markdownDarkCss: jsdelivr("github-markdown-css@5.8.1/github-markdown-dark.min.css"),
+      highlightLightCss: jsdelivr("highlight.js@11.11.1/styles/github.min.css"),
+      highlightDarkCss: jsdelivr("highlight.js@11.11.1/styles/github-dark.min.css"),
       // markdown-it-plugins
-      markdownitMark: "https://gcore.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js",
-      markdownitSub: "https://gcore.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js",
-      markdownitSup: "https://gcore.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js",
+      markdownitMark: jsdelivr("markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js"),
+      markdownitSub: jsdelivr("markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js"),
+      markdownitSup: jsdelivr("markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"),
       // katex
-      markdownTexMath: "https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/texmath.min.js",
-      markdownTexMathCss: "https://gcore.jsdelivr.net/npm/markdown-it-texmath@1.0.0/css/texmath.min.css",
-      katex: "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.js",
-      katexCss: "https://gcore.jsdelivr.net/npm/katex@0.16.18/dist/katex.min.css",
+      markdownTexMath: jsdelivr("markdown-it-texmath@1.0.0/texmath.min.js"),
+      markdownTexMathCss: jsdelivr("markdown-it-texmath@1.0.0/css/texmath.min.css"),
+      katex: jsdelivr("katex@0.16.18/dist/katex.min.js"),
+      katexCss: jsdelivr("katex@0.16.18/dist/katex.min.css"),
       // mermaid
-      mermaid: "https://gcore.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js",
+      mermaid: jsdelivr("mermaid@11.6.0/dist/mermaid.min.js"),
       // markmap
-      d3: "https://gcore.jsdelivr.net/npm/d3@7/dist/d3.min.js",
-      markmapLib: "https://gcore.jsdelivr.net/npm/markmap-lib@0.18.11/dist/browser/index.iife.min.js",
-      markmapView: "https://gcore.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.min.js",
+      d3: jsdelivr("d3@7/dist/d3.min.js"),
+      markmapLib: jsdelivr("markmap-lib@0.18.11/dist/browser/index.iife.min.js"),
+      markmapView: jsdelivr("markmap-view@0.18.10/dist/browser/index.min.js"),
     },
 
     /** Markdown-it options */
@@ -64,14 +72,15 @@
       linkify: true, // Autoconvert URL-like text to links
       typographer: false, // Enable smartypants and other typographic replacements
       highlight: function (str, lang) {
+        if (lang === "mermaid") {
+          // Handle mermaid blocks specifically for the plugin
+          return `<pre class="mermaid">${str}</pre>`;
+        }
         if (lang && hljs.getLanguage(lang)) {
           try {
             return hljs.highlight(str, {language: lang}).value
           } catch (__) {
           }
-        } else if (lang === "mermaid") {
-          // Handle mermaid blocks specifically for the plugin
-          return `<pre class="mermaid">${str}</pre>`;
         }
         return '';
       },
@@ -111,9 +120,11 @@
 
 //------ Initialize Utilities ------
 
+  let theme;
   let DivLog;
   let CensorUtil;
   let AnkiMarkDownIt;
+  let isDoing = false;
 
   async function initMarkdownit() {
     if (typeof AnkiMarkDownIt !== 'undefined') return;
@@ -326,6 +337,21 @@
     return Promise.all(urls.map(url => loadResource(url)));
   }
 
+  async function loadStyles() {
+    const currentTheme = document.body.classList.contains('nightMode') ? 'dark' : 'light';
+    if (currentTheme === theme) {
+      return;
+    }
+    theme = currentTheme;
+    if (theme === 'light') {
+      await loadResource(config.resourceUrl.markdownLightCss)
+      await loadResource(config.resourceUrl.highlightLightCss)
+    } else {
+      await loadResource(config.resourceUrl.markdownDarkCss)
+      await loadResource(config.resourceUrl.highlightDarkCss)
+    }
+  }
+
 
 //------ Controls page display ------
 
@@ -347,8 +373,12 @@
    * Renders the main content of the card, including markdown content, Mermaid diagrams, and markdown mindmap.
    */
   function renderMain() {
+    if (isDoing) return;
+    isDoing = true;
+
     initDivLog();
-    renderMarkDownAll()
+    loadStyles()
+      .then(renderMarkDownAll)
       .then(renderMermaidAll)
       .then(renderMarkMapAll)
       .then(() => {
@@ -359,6 +389,7 @@
       })
       .finally(() => {
         showCard();
+        isDoing = false;
       });
   }
 
@@ -430,7 +461,7 @@
 
       // Transform the markmap content to a tree structure
       const transformer = new markmap.Transformer();
-      transformer.urlBuilder.setProvider('jsdelivr', (path) => `https://gcore.jsdelivr.net/npm/${path}`);
+      transformer.urlBuilder.setProvider('jsdelivr', jsdelivr);
       const {root, features} = transformer.transform(content);
 
       delete features.hljs; // The project has already loaded hljs
