@@ -12,6 +12,10 @@
     background-color: var(--canvas);
 }
 
+blockquote {
+    text-align: left;
+}
+
 .original {
     opacity: 0;
 }

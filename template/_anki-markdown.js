@@ -486,7 +486,8 @@
     // Trim whitespace and decode specific HTML entities in one pass
     return html.trim()
       .replace(/&(amp|lt|gt|nbsp|quot|#39);/g, (_, type) => entities[type] || '')
-      .replace(/<br\s*\/?>/gi, '\n');  // Replace <br> and <br/> tags with newline characters
+      .replace(/<br\s*\/?>/gi, '\n')  // Replace <br> and <br/> tags with newline characters
+      .replace(/\t/g, '    ');         // Add this line to replace tab with 4 spaces
   }
 
 
