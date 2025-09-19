@@ -34,6 +34,7 @@
       markdownitMark: true,
       markdownitSub: false,
       markdownitSup: false,
+      markdownFootnote: false,
       markdownitKatex: true,
     },
 
@@ -51,11 +52,13 @@
       markdownitMark: jsdelivr("markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js"),
       markdownitSub: jsdelivr("markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js"),
       markdownitSup: jsdelivr("markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"),
+      markdownFootnote: jsdelivr("markdown-it-footnote@4.0.0/dist/markdown-it-footnote.min.js"),
       // katex
       markdownTexMath: jsdelivr("markdown-it-texmath@1.0.0/texmath.min.js"),
       markdownTexMathCss: jsdelivr("markdown-it-texmath@1.0.0/css/texmath.min.css"),
-      katex: jsdelivr("katex@0.16.18/dist/katex.min.js"),
-      katexCss: jsdelivr("katex@0.16.18/dist/katex.min.css"),
+      katex: jsdelivr("katex@0.16.22/dist/katex.min.js"),
+      katexCss: jsdelivr("katex@0.16.22/dist/katex.min.css"),
+      mhchem: jsdelivr("katex@0.16.22/dist/contrib/mhchem.min.js"),
       // mermaid
       mermaid: jsdelivr("mermaid@11.6.0/dist/mermaid.min.js"),
       // markmap
@@ -95,10 +98,11 @@
       katexOptions: {
         output: 'html',
         throwOnError: false,
-        strict: (errorCode, errorMsg, token) => {
-          DivLog.warn('Warn: ' + errorCode + ' ' + errorMsg + ' ' + token);
-          return "ignore";
-        },
+        strict: 'ignore',
+        // strict: (errorCode, errorMsg, token) => {
+        //   DivLog.warn(`Warn: ${errorCode} ${errorMsg} ${token}`);
+        //   return "ignore";
+        // },
       }
     },
 
@@ -146,6 +150,10 @@
       await loadResource(config.resourceUrl.markdownitSup);
       AnkiMarkDownIt.use(window.markdownitSup);
     }
+    if (config.plugins.markdownFootnote) {
+      await loadResource(config.resourceUrl.markdownFootnote);
+      AnkiMarkDownIt.use(window.markdownitFootnote);
+    }
 
     // katex
     if (config.plugins.markdownitKatex) {
@@ -154,6 +162,9 @@
         config.resourceUrl.markdownTexMathCss,
         config.resourceUrl.katex,
         config.resourceUrl.katexCss
+      );
+      await loadResources(
+        config.resourceUrl.mhchem
       );
       config.texMathOptions.engine = window.katex;
       AnkiMarkDownIt.use(window.texmath, config.texMathOptions);
@@ -252,12 +263,6 @@
             }
           }
           return msgContainer
-        },
-        clearLogDiv() {
-          const msgContainer = document.getElementById("msgContainer");
-          if (msgContainer) {
-            msgContainer.remove();
-          }
         }
       };
       DivLog.setLevel(globalThis.logLevel || config.logLevel || "info");
@@ -366,6 +371,115 @@
     })
   }
 
+//------ 填空Cloze模板 Processing Functions (DOM-based Preprocessing, String-based Restoration) ------
+  /**
+   * 填空卡片处理
+   * reference: https://github.com/pilgrimlyieu/Anki/issues/1
+   * 主要思路：
+   * 1、使用 Anki 的 填空Cloze模板 模板
+   * 2、将生成的 cloze span 标签替换为占位符
+   * 3、markdown 等相关渲染
+   * 4、将占位符替换为 cloze span 标签
+   */
+  class ClozeUtil {
+
+    /** 占位符，使用八卦符号。只有一个字符，避免与KaTeX冲突 */
+    CLOZE_NUM_SYMBOLS = [
+      '\u4DC0', '\u4DC1', '\u4DC2', '\u4DC3', '\u4DC4', '\u4DC5', '\u4DC6', '\u4DC7', '\u4DC8', '\u4DC9', '\u4DCA', '\u4DCB', '\u4DCC', '\u4DCD', '\u4DCE', '\u4DCF',
+      '\u4DD0', '\u4DD1', '\u4DD2', '\u4DD3', '\u4DD4', '\u4DD5', '\u4DD6', '\u4DD7', '\u4DD8', '\u4DD9', '\u4DDA', '\u4DDB', '\u4DDC', '\u4DDD', '\u4DDE', '\u4DDF',
+      '\u4DE0', '\u4DE1', '\u4DE2', '\u4DE3', '\u4DE4', '\u4DE5', '\u4DE6', '\u4DE7', '\u4DE8', '\u4DE9', '\u4DEA', '\u4DEB', '\u4DEC', '\u4DED', '\u4DEE', '\u4DEF',
+      '\u4DF0', '\u4DF1', '\u4DF2', '\u4DF3', '\u4DF4', '\u4DF5', '\u4DF6', '\u4DF7', '\u4DF8', '\u4DF9', '\u4DFA', '\u4DFB', '\u4DFC', '\u4DFD', '\u4DFE', '\u4DFF'
+    ];
+
+    /** 存储被占位符替换的原始信息，使用 Map 确保插入顺序 */
+    clozePlaceholdersData = new Map();
+    /** 已经使用的占位符数量 */
+    clozeCounter = 0;
+
+    placeholderClozeSpan() {
+      let markdownDivList = document.querySelectorAll('.markdown-body');
+      for (let i = 0; i < markdownDivList.length; i++) {
+        let html = markdownDivList[i].innerHTML;
+        if (html.includes("<span class=\"cloze\"") || html.includes("<span class=\"cloze-inactive\"")) {
+          DivLog.debug("Original content：", html);
+          this.#placeholderClozeNode(markdownDivList[i])
+        }
+      }
+    }
+
+    restoreClozeSpan() {
+      if (this.clozePlaceholdersData.size === 0) {
+        return;
+      }
+      let markdownDivList = document.querySelectorAll('.markdown-body');
+      for (let i = 0; i < markdownDivList.length; i++) {
+        this.#restoreClozeNode(markdownDivList[i])
+      }
+    }
+
+    /**
+     * 替换cloze标签为成对的占位符包裹标签内容
+     * @param {HTMLElement | Node} node - DOM 节点
+     */
+    #placeholderClozeNode(node) {
+      // 递归处理子节点，从最里层往最外层以此进行替换
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          this.#placeholderClozeNode(child);
+        }
+      }
+      if (
+        node.nodeType === Node.ELEMENT_NODE &&
+        node.matches("span.cloze, span.cloze-inactive")
+      ) {
+        // 按顺序获取占位符
+        const symbol = this.CLOZE_NUM_SYMBOLS[this.clozeCounter++];
+        // 存储原始标签信息，用于后续恢复。格式为：原始标签包裹占位符。
+        this.clozePlaceholdersData.set(symbol, node.outerHTML.replace(node.innerHTML, symbol));        // 替换cloze标签为成对的占位符包裹标签内容
+        const afterNode = document.createTextNode(symbol + node.innerHTML + symbol);
+        node.parentNode.replaceChild(afterNode, node)
+      }
+    }
+
+    /**
+     * 还原cloze标签
+     * @param {HTMLElement} node - DOM 节点
+     */
+    #restoreClozeNode(node) {
+      if (this.clozePlaceholdersData.size === 0) {
+        return;
+      }
+      let htmlContent = node.innerHTML;
+
+      // 使用 Map 的迭代顺序确保按插入顺序处理
+      for (const [symbol, data] of this.clozePlaceholdersData) {
+        if (!htmlContent.includes(symbol)) {
+          continue;
+        }
+
+        // KaTeX will wrap the markers in spans with classes like "mord", "mtight", etc. like <span class="mord mtight">䷃</span>
+        // 去掉 KaTeX 处理后占位符被包裹的span标签，只保留占位符
+        const regex = new RegExp(`<span[^>]*>([^<]*${symbol}[^<]*)<\/span>`, "g");
+        htmlContent = htmlContent.replace(regex, "$1");
+
+        // 还原占位符为原始的 cloze 标签
+        const placeholderRegex = new RegExp(symbol + "(.*)" + symbol, "s");
+        const match = htmlContent.match(placeholderRegex);
+
+        if (match) {
+          const [fullMatch, processedContent] = match;
+          const afterContent = data.replace(symbol, processedContent);
+          htmlContent = htmlContent.replace(fullMatch, afterContent);
+        }
+
+        // 处理完后删除该条目
+        this.clozePlaceholdersData.delete(symbol);
+      }
+
+      node.innerHTML = htmlContent;
+    }
+  }
 
 //------ Convert content ------
 
@@ -376,12 +490,16 @@
     if (isDoing) return;
     isDoing = true;
 
+    const clozeUtil = new ClozeUtil();
+
     initDivLog();
     loadStyles()
+      .then(() => clozeUtil.placeholderClozeSpan())
       .then(renderMarkDownAll)
       .then(renderMermaidAll)
       .then(renderMarkMapAll)
       .then(() => {
+        clozeUtil.restoreClozeSpan();
         DivLog.info("finish rendering.");
       })
       .catch((error) => {

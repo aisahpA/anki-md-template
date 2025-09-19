@@ -16,6 +16,11 @@ blockquote {
     text-align: left;
 }
 
+.supply-context {
+    margin-top: 50px;
+    font-size: 18px;
+}
+
 .original {
     opacity: 0;
 }
@@ -43,4 +48,12 @@ pre code[class*="language-"] {
     --markmap-code-color: #ddd;
     --markmap-circle-open-bg: #444;
     --markmap-text-color: #eee;
+}
+
+.cloze {
+    font-weight: bold;
+    color: blue !important;
+}
+.nightMode .cloze {
+    color: #6e93e8 !important;
 }

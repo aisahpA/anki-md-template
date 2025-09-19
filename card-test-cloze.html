@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="cn" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="template/样式.css">
+    <title>Anki-Markdown 模板测试</title>
+</head>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;      /* 垂直居中 */
+        min-height: 100vh;        /* 让 body 占满整个视口高度 */
+        min-width: 100vw;
+    }
+    #qa {
+        width: 60vw;
+        max-width: 800px; /* 设置最大宽度 */
+        min-width: 400px;  /* 设置最小宽度 */
+    }
+    li {
+        text-align: start;
+    }
+    pre {
+        text-align: left;
+    }
+</style>
+<body class="card">
+<div id="qa">
+    <div class="markdown-body original">
+        # Markdown 填空题测试
+    </div>
+    <div class="markdown-body original">
+## 基础格式
+```plain
+- I'm {{c1::Cloze 1}}
+- I'm {{c1::nested in Cloze 1 named {{c2::Cloze 2}} lol}} (nested test)
+- I'm {{c2::nested in Cloze 2 named {{c1::Cloze 1}} lol}} (nested test)
+- I'm normal {{c2::Cloze 2}}
+```
+### 卡片 1
+- 正面
+    - I'm <span class="cloze" data-cloze="Cloze 1" data-ordinal="1">[...]</span>
+    - I'm <span class="cloze" data-cloze="nested in Cloze 1 named <span class=&quot;cloze-inactive&quot; data-ordinal=&quot;2&quot;>Cloze 2</span> lol" data-ordinal="1">[...]</span> (nested test)
+    - I'm <span class="cloze-inactive" data-ordinal="2">nested in Cloze 2 named <span class="cloze" data-cloze="Cloze 1" data-ordinal="1">[...]</span> lol</span> (nested test)
+    - I'm normal <span class="cloze-inactive" data-ordinal="2">Cloze 2</span>
+- 背面
+    - I'm <span class="cloze" data-ordinal="1">Cloze 1</span>
+    - I'm <span class="cloze" data-ordinal="1">nested in Cloze 1 named <span class="cloze-inactive" data-ordinal="2">Cloze 2</span> lol</span> (nested test)
+    - I'm <span class="cloze-inactive" data-ordinal="2">nested in Cloze 2 named <span class="cloze" data-ordinal="1">Cloze 1</span> lol</span> (nested test)
+    - I'm normal <span class="cloze-inactive" data-ordinal="2">Cloze 2</span>
+    </div>
+
+    <div class="markdown-body original">
+### 卡片 2
+- 正面
+    - I'm <span class="cloze-inactive" data-ordinal="1">Cloze 1</span>
+    - I'm <span class="cloze-inactive" data-ordinal="1">nested in Cloze 1 named <span class="cloze" data-cloze="Cloze 2" data-ordinal="2">[...]</span> lol</span> (nested test)
+    - I'm <span class="cloze" data-cloze="nested in Cloze 2 named <span class=&quot;cloze-inactive&quot; data-ordinal=&quot;1&quot;>Cloze 1</span> lol" data-ordinal="2">[...]</span> (nested test)
+    - I'm normal <span class="cloze" data-cloze="Cloze 2" data-ordinal="2">[...]</span>
+- 背面
+    - I'm <span class="cloze-inactive" data-ordinal="1">Cloze 1</span>
+    - I'm <span class="cloze-inactive" data-ordinal="1">nested in Cloze 1 named <span class="cloze" data-ordinal="2">Cloze 2</span> lol</span> (nested test)
+    - I'm <span class="cloze" data-ordinal="2">nested in Cloze 2 named <span class="cloze-inactive" data-ordinal="1">Cloze 1</span> lol</span> (nested test)
+    - I'm normal <span class="cloze" data-ordinal="2">Cloze 2</span>
+    </div>
+
+    <div class="markdown-body original">
+## KaTex 数学公式
+
+```plain
+This is {{c1::$\LaTeX$}}. This is $\lim_{n \to \infty} {{c1::\sum_{i=0}^n \frac{1}{{{c2::i^2}}} }} = \frac{\pi^2}{6}$, and
+$$
+\begin{cases}
+    {{c1::\int_0^\infty t^x \mathrm{e}^{-t} \,dx}}, &amp; \text{Display test}\\
+    \int_0^\infty {{c1::{{c2::t^x}} \mathrm{e}^{-t} }} \,dx, &amp; \text{Copied}\\
+    \pu{1 mol}, &amp; \text{mhchem test}
+\end{cases}
+$$
+```
+
+### 卡片 1
+- 正面
+This is <span class="cloze" data-cloze="$\LaTeX$" data-ordinal="1">[...]</span>. This is $\lim_{n \to \infty} <span class="cloze" data-cloze="\sum_{i=0}^n \frac{1}{<span class=&quot;cloze-inactive&quot; data-ordinal=&quot;2&quot;>i^2</span>} " data-ordinal="1">[...]</span> = \frac{\pi^2}{6}$, and
+$$
+\begin{cases}
+    <span class="cloze" data-cloze="\int_0^\infty t^x \mathrm{e}^{-t} \,dx" data-ordinal="1">[...]</span>, &amp; \text{Display test}\\
+    \int_0^\infty <span class="cloze" data-cloze="<span class=&quot;cloze-inactive&quot; data-ordinal=&quot;2&quot;>t^x</span> \mathrm{e}^{-t} " data-ordinal="1">[...]</span> \,dx, &amp; \text{Copied}\\
+    \pu{1 mol}, &amp; \text{mhchem test}
+\end{cases}
+$$
+- 背面
+This is <span class="cloze" data-ordinal="1">$\LaTeX$</span>. This is $\lim_{n \to \infty} <span class="cloze" data-ordinal="1">\sum_{i=0}^n \frac{1}{<span class="cloze-inactive" data-ordinal="2">i^2</span>} </span> = \frac{\pi^2}{6}$, and
+$$
+\begin{cases}
+    <span class="cloze" data-ordinal="1">\int_0^\infty t^x \mathrm{e}^{-t} \,dx</span>, &amp; \text{Display test}\\
+    \int_0^\infty <span class="cloze" data-ordinal="1"><span class="cloze-inactive" data-ordinal="2">t^x</span> \mathrm{e}^{-t} </span> \,dx, &amp; \text{Copied}\\
+    \pu{1 mol}, &amp; \text{mhchem test}
+\end{cases}
+$$
+    </div>
+
+    <div class="markdown-body original">
+### 卡片 2
+- 正面
+This is <span class="cloze-inactive" data-ordinal="1">$\LaTeX$</span>. This is $\lim_{n \to \infty} <span class="cloze-inactive" data-ordinal="1">\sum_{i=0}^n \frac{1}{<span class="cloze" data-cloze="i^2" data-ordinal="2">[...]</span>} </span> = \frac{\pi^2}{6}$, and
+$$
+\begin{cases}
+    <span class="cloze-inactive" data-ordinal="1">\int_0^\infty t^x \mathrm{e}^{-t} \,dx</span>, &amp; \text{Display test}\\
+    \int_0^\infty <span class="cloze-inactive" data-ordinal="1"><span class="cloze" data-cloze="t^x" data-ordinal="2">[...]</span> \mathrm{e}^{-t} </span> \,dx, &amp; \text{Copied}\\
+    \pu{1 mol}, &amp; \text{mhchem test}
+\end{cases}
+$$
+- 背面
+This is <span class="cloze-inactive" data-ordinal="1">$\LaTeX$</span>. This is $\lim_{n \to \infty} <span class="cloze-inactive" data-ordinal="1">\sum_{i=0}^n \frac{1}{<span class="cloze" data-ordinal="2">i^2</span>} </span> = \frac{\pi^2}{6}$, and
+$$
+\begin{cases}
+    <span class="cloze-inactive" data-ordinal="1">\int_0^\infty t^x \mathrm{e}^{-t} \,dx</span>, &amp; \text{Display test}\\
+    \int_0^\infty <span class="cloze-inactive" data-ordinal="1"><span class="cloze" data-ordinal="2">t^x</span> \mathrm{e}^{-t} </span> \,dx, &amp; \text{Copied}\\
+    \pu{1 mol}, &amp; \text{mhchem test}
+\end{cases}
+$$
+    </div>
+
+    <div class="markdown-body original">
+## 代码块
+
+```plain
+# Code block
+print("highlight test")
+# Codeblock Cloze
+{{c1::def func:
+    print("This is a func")
+    return {{c2::lambda x: x ** 2}}}}
+```
+
+### 卡片 1
+- 正面
+```python
+# Code block
+print("highlight test")
+# Codeblock Cloze
+<span class="cloze" data-cloze="def func:
+    print(&quot;This is a func&quot;)
+    return <span class=&quot;cloze-inactive&quot; data-ordinal=&quot;2&quot;>lambda x: x ** 2</span>" data-ordinal="1">[...]</span>
+```
+- 背面
+```python
+# Code block
+print("highlight test")
+# Codeblock Cloze
+<span class="cloze" data-ordinal="1">def func:
+    print("This is a func")
+    return <span class="cloze-inactive" data-ordinal="2">lambda x: x ** 2</span></span>
+```
+    </div>
+
+    <div class="markdown-body original">
+### 卡片 2
+
+- 正面
+```python
+# Code block
+print("highlight test")
+# Codeblock Cloze
+<span class="cloze-inactive" data-ordinal="1">def func:
+    print("This is a func")
+    return <span class="cloze" data-cloze="lambda x: x ** 2" data-ordinal="2">[...]</span></span>
+```
+
+- 背面
+```python
+# Code block
+print("highlight test")
+# Codeblock Cloze
+<span class="cloze-inactive" data-ordinal="1">def func:
+    print("This is a func")
+    return <span class="cloze" data-ordinal="2">lambda x: x ** 2</span></span>
+```
+    </div>
+
+    <div class="markdown-body original">
+## mermaid
+
+```plain
+flowchart LR
+    A[This is mermaid] --&gt; B[test]
+    B --&gt; C
+    C("{{c1::mermaid}}") -.-&gt;|or| D{"{{c1::My {{c2::PlantUML}}}}"}
+```
+
+### 卡片 1
+- 正面
+```mermaid
+flowchart LR
+    A[This is mermaid] --&gt; B[test]
+    B --&gt; C
+    C("<span class="cloze" data-cloze="mermaid" data-ordinal="1">[...]</span>") -.-&gt;|or| D{"<span class="cloze" data-cloze="My <span class=&quot;cloze-inactive&quot; data-ordinal=&quot;2&quot;>PlantUML</span>" data-ordinal="1">[...]</span>"}
+```
+
+- 背面
+```mermaid
+flowchart LR
+    A[This is mermaid] --&gt; B[test]
+    B --&gt; C
+    C("<span class="cloze" data-ordinal="1">mermaid</span>") -.-&gt;|or| D{"<span class="cloze" data-ordinal="1">My <span class="cloze-inactive" data-ordinal="2">PlantUML</span></span>"}
+```
+    </div>
+
+    <div class="markdown-body original">
+### 卡片 2
+
+- 正面
+```mermaid
+flowchart LR
+    A[This is mermaid] --&gt; B[test]
+    B --&gt; C
+    C("<span class="cloze-inactive" data-ordinal="1">mermaid</span>") -.-&gt;|or| D{"<span class="cloze-inactive" data-ordinal="1">My <span class="cloze" data-cloze="PlantUML" data-ordinal="2">[...]</span></span>"}
+```
+
+- 背面
+```mermaid
+flowchart LR
+    A[This is mermaid] --&gt; B[test]
+    B --&gt; C
+    C("<span class="cloze-inactive" data-ordinal="1">mermaid</span>") -.-&gt;|or| D{"<span class="cloze-inactive" data-ordinal="1">My <span class="cloze" data-ordinal="2">PlantUML</span></span>"}
+```
+    </div>
+
+    <script>logLevel = 'error'</script>
+    <script type="module" src="template/_anki-markdown.js"></script>
+</div>
+
+<script>
+  // 添加暗黑模式
+  let isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // isDarkMode = true;
+  if (isDarkMode) {
+    document.body.classList.add('nightMode');
+  }
+</script>
+</body>
+</html>
