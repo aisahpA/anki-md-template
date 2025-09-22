@@ -401,7 +401,7 @@
       for (let i = 0; i < markdownDivList.length; i++) {
         let html = markdownDivList[i].innerHTML;
         if (html.includes("<span class=\"cloze\"") || html.includes("<span class=\"cloze-inactive\"")) {
-          DivLog.debug("Original content：", html);
+          DivLog.debug("Cloze Original content：", html);
           this.#placeholderClozeNode(markdownDivList[i])
         }
       }
@@ -435,10 +435,14 @@
       ) {
         // 按顺序获取占位符
         const symbol = this.CLOZE_NUM_SYMBOLS[this.clozeCounter++];
+
         // 存储原始标签信息，用于后续恢复。格式为：原始标签包裹占位符。
-        this.clozePlaceholdersData.set(symbol, node.outerHTML.replace(node.innerHTML, symbol));        // 替换cloze标签为成对的占位符包裹标签内容
-        const afterNode = document.createTextNode(symbol + node.innerHTML + symbol);
-        node.parentNode.replaceChild(afterNode, node)
+        const clonedNode = node.cloneNode(false);
+        clonedNode.innerHTML = symbol;
+        this.clozePlaceholdersData.set(symbol, clonedNode.outerHTML);
+
+        // 替换cloze标签为 占位符包裹标签 innerHTML
+        node.outerHTML = symbol + node.innerHTML + symbol;
       }
     }
 
